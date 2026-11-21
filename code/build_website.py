@@ -8,6 +8,7 @@
 
 Run:  python code/build_website.py            (everything)
       python code/build_website.py --charts-only  (skip the slow map layers)
+      python code/build_website.py --gallery-only (charts plus the gallery images)
 """
 import json
 from pathlib import Path
@@ -171,6 +172,101 @@ c8.update_layout(height=400, legend_title_text="", xaxis=dict(showgrid=False),
                             tickvals=[1, 3, 10, 30, 100, 300], ticktext=["1", "3", "10", "30", "100", "300"]))
 dump(c8, "c8_medians")
 
+# ---- c12: every year since 1980, ranked (how unusual was 2023?) -------------
+yr = y.loc[fd.FULL_REPORTING_FROM:].area_ha.sort_values(ascending=False)
+med12 = yr.median()
+c12 = go.Figure(go.Bar(
+    x=[str(k) for k in yr.index], y=yr.values / 1e6, name="Area burned (Mha)",
+    meta=["ember" if k == 2023 else ("ink" if k == 2025 else "context") for k in yr.index],
+    customdata=np.arange(1, len(yr) + 1),
+    hovertemplate="%{x}: %{y:.2f} Mha · rank %{customdata} of " + str(len(yr)) + "<extra></extra>"))
+c12.add_hline(y=med12 / 1e6, line_dash="dot", line_width=1,
+              annotation_text=f"Median year: {med12 / 1e6:.1f} Mha", annotation_position="top right")
+c12.data[0].update(text=[f"<b>{k}</b>" if k in (2023, 2025) else "" for k in yr.index],
+                   textposition="outside", cliponaxis=False, constraintext="none", textfont=dict(size=13))
+c12.update_xaxes(type="category", showticklabels=False, showgrid=False, title_text=f"{len(yr)} years, 1980–2025, largest to smallest")
+c12.update_yaxes(title_text="Area burned (Mha)", rangemode="tozero", dtick=4)
+c12.update_layout(height=360, showlegend=False, bargap=0.18, meta=dict(table=dict(
+    head=["Rank", "Year", "Area burned (Mha)"],
+    rows=[[i + 1, int(k), r(v / 1e6, 2)] for i, (k, v) in enumerate(yr.items())])))
+dump(c12, "c12_ranked")
+
+# ---- c13: share of fires vs share of area, by province ----------------------
+d13 = df[df.province.notna()]
+keep = d13.province.value_counts()
+d13 = d13[d13.province.isin(keep[keep >= 1000].index)]
+f13 = pd.crosstab(d13.province, d13.cause, normalize="index").reindex(columns=fd.CAUSE_ORDER).fillna(0)
+a13 = (d13.pivot_table(index="province", columns="cause", values="SIZE_HA", aggfunc="sum", observed=True)
+       .reindex(columns=fd.CAUSE_ORDER).fillna(0))
+a13 = a13.div(a13.sum(axis=1), axis=0)
+f13.loc["Canada"] = df.cause.value_counts(normalize=True).reindex(fd.CAUSE_ORDER).values
+ca = df.groupby("cause", observed=True).SIZE_HA.sum().reindex(fd.CAUSE_ORDER)
+a13.loc["Canada"] = (ca / ca.sum()).values
+order13 = ["Canada"] + list(a13.drop("Canada").Lightning.sort_values(ascending=False).index.astype(str))
+f13.index, a13.index = f13.index.astype(str), a13.index.astype(str)
+c13 = make_subplots(rows=1, cols=2, shared_yaxes=True, horizontal_spacing=0.07,
+                    subplot_titles=["Share of fires", "Share of area burned"])
+for col, tab, what in ((1, f13, "fires"), (2, a13, "area")):
+    for cause in fd.CAUSE_ORDER:
+        c13.add_trace(go.Bar(y=order13, x=tab.loc[order13, cause] * 100, orientation="h", name=cause, meta=cause,
+                             showlegend=False,
+                             hovertemplate="%{y} · " + cause + ": %{x:.0f}% of " + what + "<extra></extra>"), 1, col)
+c13.update_xaxes(range=[0, 100], tickvals=[0, 50, 100], ticktext=["0%", "50%", "100%"], showgrid=False)
+c13.update_yaxes(autorange="reversed", automargin=True)
+c13.update_layout(height=430, barmode="stack", bargap=0.25, margin=dict(l=150, r=28, t=40, b=36),
+                  meta=dict(table=dict(
+                      head=["", "Lightning % fires", "Lightning % area", "Human % fires", "Human % area",
+                            "Unknown % fires", "Unknown % area"],
+                      rows=[[p] + [r(t.loc[p, c] * 100, 1) for c in fd.CAUSE_ORDER for t in (f13, a13)]
+                            for p in order13])))
+dump(c13, "c13_share")
+
+# ---- c14: concentration curve (largest fires first) ------------------------
+s14 = df.loc[df.SIZE_HA > 0, "SIZE_HA"].sort_values(ascending=False).to_numpy()
+cum = np.cumsum(s14) / s14.sum()
+n = len(s14)
+idx = np.unique(np.r_[np.geomspace(1, n, 500).astype(int) - 1, n - 1])
+n_half = int(np.searchsorted(cum, 0.5)) + 1
+n200 = int((s14 >= 200).sum())
+i1 = int(n * 0.01) - 1
+c14 = go.Figure(go.Scatter(x=(idx + 1) / n * 100, y=cum[idx] * 100, mode="lines", name="Cumulative share of area",
+                           meta="ember", hovertemplate="Largest %{x:.3g}% of fires: %{y:.1f}% of area<extra></extra>"))
+pts = [(n_half, f"{n_half:,} fires burned half"), (i1 + 1, f"Largest 1%: {cum[i1]:.0%}"),
+       (n200, f"200 ha+ ({n200 / n:.1%}): {cum[n200 - 1]:.1%}")]
+c14.add_trace(go.Scatter(x=[k / n * 100 for k, _ in pts], y=[cum[k - 1] * 100 for k, _ in pts],
+                         mode="markers+text", text=[t for _, t in pts], name="Marked points", meta="ink",
+                         textposition=["middle right", "bottom right", "bottom right"],
+                         hovertemplate="%{text}<extra></extra>"))
+c14.update_xaxes(type="log", title_text="Share of fires, ranked from largest (log scale)", ticksuffix="%",
+                 tickvals=[0.01, 0.1, 1, 10, 100], ticktext=["0.01%", "0.1%", "1%", "10%", "100%"], showgrid=False)
+c14.update_yaxes(title_text="Cumulative share of area", ticksuffix="%", range=[0, 102])
+c14.update_layout(height=380, showlegend=False, meta=dict(table=dict(
+    head=["Largest fires", "Count", "Share of area (%)"],
+    rows=[[f"Top {q}", f"{max(1, int(n * q / 100)):,}", r(cum[max(1, int(n * q / 100)) - 1] * 100, 1)]
+          for q in (0.01, 0.1, 0.19, 1, 5.3, 10, 50)])))
+dump(c14, "c14_concentration")
+
+# ---- c16: reporting coverage (agency x year) --------------------------------
+g16 = df.groupby(["agency", "YEAR"]).size().unstack(fill_value=0)
+g16 = g16.reindex(columns=range(fd.FIRST_YEAR, fd.LAST_YEAR + 1), fill_value=0)
+first = g16.gt(0).idxmax(axis=1).sort_values(kind="stable")
+g16 = g16.loc[first.index]
+names16 = [fd.AGENCY_SHORT[a] for a in g16.index]
+z = np.where(g16.to_numpy() > 0, np.log10(g16.to_numpy().clip(1)), np.nan)
+c16 = go.Figure(go.Heatmap(z=z, x=list(g16.columns), y=names16, customdata=g16.to_numpy(), meta="heat",
+                           xgap=0, ygap=2, zmin=0, zmax=float(np.nanmax(z)),
+                           colorbar=dict(title="Fires", tickvals=[0, 1, 2, 3, 4],
+                                         ticktext=["1", "10", "100", "1k", "10k"], thickness=10, len=0.9),
+                           hovertemplate="%{y} %{x}: %{customdata:,} fires<extra></extra>"))
+c16.add_vline(x=1979.5, line_width=1.2)
+c16.add_annotation(x=1979.5, y=1, yref="paper", yanchor="bottom", xanchor="right", showarrow=False,
+                   text="Trend tests start here (1980) →", font=dict(size=12))
+c16.update_yaxes(autorange="reversed")
+c16.update_layout(height=420, margin=dict(l=150, r=16, t=44, b=36), meta=dict(table=dict(
+    head=["Agency", "First year", "Fires 1950–2025"],
+    rows=[[nm, int(first[a]), f"{int(g16.loc[a].sum()):,}"] for nm, a in zip(names16, g16.index)])))
+dump(c16, "c16_coverage")
+
 # ---- summary numbers ---------------------------------------------------------
 counts = df.cause.value_counts().reindex(fd.CAUSE_ORDER)
 area = df.groupby("cause", observed=True).SIZE_HA.sum().reindex(fd.CAUSE_ORDER)
@@ -187,6 +283,8 @@ summary = dict(
                for k, v in y.area_ha.sort_values(ascending=False).head(10).items()],
     rho=dict(lightning=r(rho["Lightning"][0], 2), human=r(rho["Human"][0], 2),
              p_human=r(rho["Human"][1], 2)),
+    stripes=dict(years=[int(k) for k in y.index], mha=[r(v / 1e6, 2) for v in y.area_ha],
+                 light=F.stripe_colors(df, "light")[1], dark=F.stripe_colors(df, "dark")[1]),
 )
 (WEB / "data" / "summary.json").write_text(json.dumps(summary, indent=1))
 
@@ -199,6 +297,18 @@ import seaborn as sns
 from pyproj import Transformer
 import style as st
 st.apply()
+
+# ---- gallery plates (bare figures: the page supplies titles and captions) ----
+for th in ("light", "dark"):
+    fg, _ = F.fig18_fire_rings(df, theme=th, bare=True)
+    fg.savefig(WEB / "img" / f"rings_{th}.png", dpi=220, transparent=True)
+    plt.close(fg)
+fg, _ = F.fig19_ember_field(df, bare=True)
+fg.savefig(WEB / "img" / "embers.jpg", dpi=300, facecolor=fg.get_facecolor(), pil_kwargs=dict(quality=88))
+plt.close(fg)
+if "--gallery-only" in sys.argv:
+    print("gallery written")
+    raise SystemExit(0)
 
 prov, scars = F._load_geo()
 x0, y0, x1, y1 = prov.total_bounds

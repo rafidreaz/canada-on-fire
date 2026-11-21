@@ -26,33 +26,41 @@ These come from the course (L1 p.30, L3, L7, L8, L9, L11, L12, L13).
 - **Years:** keep 1950–2025. Drop `YEAR = -999` and the pre-1950 rows (171 records).
 - **Reporting coverage (from the data):** first year per agency is 1950 (BC, YT, PC), 1955 (NL), 1959 (AB, MB, NT, ON, QC, SK), 1960 (NS), 1980 (NB), 2018 (PE). Trend tests use 1980–2025; figures shade earlier years.
 - **Province:** assigned by where the fire burned (spatial join of each point to the province outlines; nearest province within 25 km for coastal points; 346 points, 0.08%, stay unassigned). Parks Canada fires therefore count in their province, and the NWT and Nunavut are separate.
-- **Cause:** H = Human, N = Lightning (natural), U = Unknown. Unknown is shown in grey, never dropped silently (it is omitted only from the seasonal radar, and the subtitle says so).
+- **Cause:** H = Human, N = Lightning (natural), U = Unknown. Unknown is shown in its own colour, never dropped silently (it is omitted only from the seasonal radar, and the subtitle says so).
 - **Month:** seasonal figures drop `MONTH = 0` (records with an unknown month).
 - **Size:** 40,028 records have `SIZE_HA = 0`. Size distributions use fires with a recorded size (408,419) and say so; area totals keep them, since they add 0 ha. 23.5% of records are exactly 0.1 ha, a recording habit, so size trends use fires of 1 ha or more.
 
-## Figure lineup (report order)
+## Figure lineup (site and notebook order)
 
 | # | File | Question | Plot type (lecture) | Point it supports |
 |---|---|---|---|---|
 | 1 | fig1_trend | Q1 | Two-panel line + 10-yr average, trend tests (L3) | Fires fall (−77/yr, p < 0.001); area has no significant trend but 2023 and 2025 are the two largest years |
-| 2 | fig2_season_heatmap | Q1 | Year × month heatmap, square-root scale | Burning is concentrated in May–Aug; 2023 had the largest May on record |
-| 3 | fig3_treemap_2023 | Q1 | Treemap (L8) | Five jurisdictions burned over 1.5 Mha in 2023; Quebec and the NWT made up half |
-| 4 | fig4_waffle_cause | Q2 | Two waffles (L8) | People start 54% of fires; lightning burns 84% of the area |
-| 5 | fig5_radar_season | Q2 | Radar lines, no fill (L11) | Human fires peak in May, lightning in July |
-| 6 | fig6_region_cause | Q2 | Ranked stacked bars (L3) | Lightning causes 74–96% of the area in every region over 10 Mha |
-| 7 | fig10_ignition_maps | Q2 | Dot maps, small multiples (L3, L12) | Lightning starts in the remote interior; human starts near people |
-| 8 | fig7_size_histogram | Q3 | Mirrored log histogram (L7) | 5.3% of fires burn 98.9% of the area; the top 1% burn 83% |
-| 9 | fig8_boxen_decade | Q3 | Boxen by decade, Spearman test (L12) | Escaped lightning fires have grown since 1980 (ρ = 0.68); human fires have not |
-| 10 | fig9_burn_scars | Q4 | Burn-perimeter map + centre of burning + per-year inset | The belt has not moved north; burning per year doubled in the 2020s and its centre moved ~370 km west |
-| 11 | fig11_burn_rate_map | Q4 | Normalised choropleth | Per unit of land, Saskatchewan burns hardest; the NWT is fourth |
+| 2 | fig12_ranked_years | Q1 | Ranked bars (L3) | 2023 is 2.0x the next-worst year and 9x the median year |
+| 3 | fig2_season_heatmap | Q1 | Year × month heatmap, square-root scale | Burning is concentrated in May–Aug; 2023 had the largest May on record |
+| 4 | fig3_treemap_2023 | Q1 | Treemap (L8) | Five jurisdictions burned over 1.5 Mha in 2023; Quebec and the NWT made up half |
+| 5 | fig4_waffle_cause | Q2 | Two waffles (L8) | People start 54% of fires; lightning burns 84% of the area |
+| 6 | fig13_cause_share_province | Q2 | Paired 100% stacked bars (L8) | Lightning's share of area beats its share of fires by 17–68 points outside NB and NS |
+| 7 | fig5_radar_season | Q2 | Radar lines, no fill (L11) | Human fires peak in May, lightning in July |
+| 8 | fig6_region_cause | Q2 | Ranked stacked bars (L3) | Lightning causes 74–96% of the area in every region over 10 Mha |
+| 9 | fig10_ignition_maps | Q2 | Dot maps, small multiples (L3, L12) | Lightning starts in the remote interior; human starts near people |
+| 10 | fig7_size_histogram | Q3 | Mirrored log histogram (L7) | 5.3% of fires burn 98.9% of the area; the top 1% burn 83% |
+| 11 | fig14_concentration_curve | Q3 | Cumulative (Lorenz-style) curve | 766 fires (0.19%) burned half of all the area |
+| 12 | fig8_boxen_decade | Q3 | Boxen by decade, Spearman test (L12) | Escaped lightning fires have grown since 1980 (ρ = 0.68); human fires have not |
+| 13 | fig9_burn_scars | Q4 | Burn-perimeter map + centre of burning + per-year inset | The belt has not moved north; burning per year doubled in the 2020s and its centre moved ~370 km west |
+| 14 | fig15_decade_small_multiples | Q4 | Small-multiple maps (L3, L12) | Every decade burns the same belt; the 2020s burned 5.5 Mha a year |
+| 15 | fig11_burn_rate_map | Q4 | Normalised choropleth | Per unit of land, Saskatchewan burns hardest; the NWT is fourth |
+| 16 | fig16_coverage | Method | Agency × year heatmap, log scale | Reporting is complete for most agencies from 1959, all but PEI from 1980 |
+| A | fig17_fire_stripes | Gallery | Colour stripes | The whole 76-year record in one band |
+| B | fig18_fire_rings | Gallery | Radial heatmap (year rings × week) | Every season burns May–August; 2023 lit up early |
+| C | fig19_ember_field | Gallery | Glow point map of all 448,447 starts | Large fires in the remote north, small ones near people |
 
-Eleven figures of ten distinct types, against a minimum of five. The 8-page report will use a subset (see the LaTeX step); the website shows all of them.
+Sixteen figures of thirteen distinct types plus three gallery plates, against a minimum of five plot types. The 8-page report will use a subset (see the LaTeX step); the website and notebook show all of them. Version 1 of the site (11 figures) is kept at `/v1/`.
 
 ## Visual system
 
 - **Page fit:** figures are drawn at the LaTeX text width of 6.5 in (letter, 1 in margins) and included at 100% scale, so 7–8.5pt figure text prints at 7–8.5pt.
 - **Type:** Inter (bundled, SIL Open Font Licence) so every machine renders the same figures. Titles 10.5pt bold, labels and ticks 8–8.5pt, notes and source lines 6.8–7pt grey.
-- **Colours:** Lightning `#C77700` (amber), Human `#1F5A99` (blue), Unknown `#8C8C8C` (grey, always direct-labelled), context `#C9C9C9`, neutral `#A09A92`, ink `#222222`, accent `#B3261E` (record / focus). Sequential ramps use seaborn "rocket_r". The amber/blue pair passes the colour-blind checks.
+- **Colours:** Lightning `#C77700` (amber), Human `#1F5A99` (blue), Unknown `#2E9E6E` (green; dark theme `#26A878`; validated with the dataviz palette checker against both surfaces), context `#C9C9C9`, neutral `#A09A92`, ink `#222222`, accent `#B3261E` (record / focus). Sequential ramps use seaborn "rocket_r". All three cause colours pass the colour-blind and normal-vision separation checks in both themes. Gallery plates use rocket (light) and inferno (dark) ramps.
 - **Furniture:** no top or right spines, light horizontal grid only where values are read, direct labels instead of legends wherever possible.
 
 ## Build structure

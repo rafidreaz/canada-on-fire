@@ -76,7 +76,8 @@ C.append(code("\n\n\n".join([
     src(F.trend_test), src(F._p), src(F._largest_remainder), src(F._waffle),
     'NEUTRAL = "#A09A92"   # warm grey: neutral context, not a cause colour',
     'GEO_DIR = st.FIG_DIR.parent / "data_derived"\nLAND = "#EFEBE4"',
-    src(F._load_geo), src(F._base_map), src(F.scar_centres)])))
+    src(F._load_geo), src(F._base_map), src(F.scar_centres),
+    src(F.stripe_colors), src(F.fire_rings_grid)])))
 
 FIGS = [
     ("Q1: Is the area burned increasing, and how unusual was 2023?", [
@@ -84,41 +85,67 @@ FIGS = [
          "Fires per year have fallen since 1980 (−77 a year, p < 0.001). Area burned has no "
          "significant trend over 1980–2025 (Kendall p = 0.10): it swings wildly, and the two largest "
          "years on record are 2023 (17.6 Mha, 2.0x any other) and 2025 (8.7 Mha)."),
-        ("fig2_season_heatmap", "Figure 2: When the land burns",
+        ("fig12_ranked_years", "Figure 2: How unusual was 2023?",
+         "Ranked against every year since 1980, 2023 is 2.0x the next-worst year (2025) and 9x the "
+         "median year (1.9 Mha)."),
+        ("fig2_season_heatmap", "Figure 3: When the land burns",
          "Burning is concentrated in May–August (97% of dated area). 2023 started early, with the "
          "largest May in 76 years (6.5 Mha)."),
-        ("fig3_treemap_2023", "Figure 3: 2023 by province and territory",
+        ("fig3_treemap_2023", "Figure 4: 2023 by province and territory",
          "Five jurisdictions each burned over 1.5 Mha in 2023 (93% of the year); Quebec and the NWT "
          "alone made up half."),
     ]),
     ("Q2: How do lightning and human fires differ?", [
-        ("fig4_waffle_cause", "Figure 4: Share of fires vs share of area",
+        ("fig4_waffle_cause", "Figure 5: Share of fires vs share of area",
          "People start 54% of fires but cause only 12% of the area burned; lightning starts 44% but "
          "burns 84%."),
-        ("fig5_radar_season", "Figure 5: Two fire seasons",
+        ("fig13_cause_share_province", "Figure 6: The same split, region by region",
+         "Outside New Brunswick and Nova Scotia, lightning's share of area exceeds its share of fires "
+         "by 17–68 points; the gap is widest in Newfoundland and Labrador."),
+        ("fig5_radar_season", "Figure 7: Two fire seasons",
          "Human fires peak in May (42% in March–May); 90% of lightning fires start in June–August."),
-        ("fig6_region_cause", "Figure 6: Where each cause burns",
+        ("fig6_region_cause", "Figure 8: Where each cause burns",
          "Lightning burns 74–96% of the area in every province or territory with over 10 Mha burned; "
          "the Maritimes together burned under 0.2 Mha."),
-        ("fig10_ignition_maps", "Figure 7: Where fires start, by cause",
+        ("fig10_ignition_maps", "Figure 9: Where fires start, by cause",
          "Lightning ignitions spread across the remote boreal interior; human ignitions trace roads, "
          "rivers and the populated south."),
     ]),
     ("Q3: Do a few huge fires dominate, and has typical size changed?", [
-        ("fig7_size_histogram", "Figure 8: A few huge fires do almost all the burning",
+        ("fig7_size_histogram", "Figure 10: A few huge fires do almost all the burning",
          "Fires of 200 ha or more are 5.3% of fires with a recorded size but 98.9% of the area; the "
          "largest 1% burned 83%."),
-        ("fig8_boxen_decade", "Figure 9: Escaped lightning fires have grown since 1980",
+        ("fig14_concentration_curve", "Figure 11: How concentrated is the burning?",
+         "Just 766 fires (0.19%) burned half of all the land burned since 1950."),
+        ("fig8_boxen_decade", "Figure 12: Escaped lightning fires have grown since 1980",
          "The yearly median size of lightning fires over 1 ha rose over 1980–2025 (Spearman ρ = 0.68, "
          "p < 0.001; 0.66 without 2023); human fires show no significant change (ρ = 0.28, p = 0.06)."),
     ]),
     ("Q4: Where are the hotspots, and have they shifted?", [
-        ("fig9_burn_scars", "Figure 10: Half a century of burn scars",
+        ("fig9_burn_scars", "Figure 13: Half a century of burn scars",
          "The boreal belt has not moved north (centre of burning 57.7–59.7°N in every decade), but "
          "mapped burning per year doubled in the 2020s and its centre moved about 370 km west."),
-        ("fig11_burn_rate_map", "Figure 11: Burning per unit of land",
+        ("fig15_decade_small_multiples", "Figure 14: One map per decade",
+         "Every decade burns the same belt; the 2020s (2020–24) averaged 5.5 Mha of mapped burning a "
+         "year, double any earlier decade."),
+        ("fig11_burn_rate_map", "Figure 15: Burning per unit of land",
          "Per 1,000 km² of land, Saskatchewan burns hardest (935 ha a year), ahead of Manitoba and "
          "Alberta; the NWT, first in total area, is fourth."),
+    ]),
+    ("Method check: reporting coverage", [
+        ("fig16_coverage", "Figure 16: Who reported, and from when",
+         "Most agencies report from 1959, New Brunswick from 1980 and PEI from 2018, which is why the "
+         "trend tests start in 1980."),
+    ]),
+    ("Gallery: the same data, drawn to be seen", [
+        ("fig17_fire_stripes", "Plate A: Fire stripes",
+         "One stripe per year, coloured by area burned; the exact values are in Figures 1 and 2."),
+        ("fig18_fire_rings", "Plate B: Fire rings",
+         "One ring per year, one sector per week: May–August burns in every ring, and 2023 lit up from "
+         "early May. The exact version is Figure 3."),
+        ("fig19_ember_field", "Plate C: Ember field",
+         "All 448,447 fire starts, sized and lit by final size: large embers fill the remote north, "
+         "small ones crowd the populated south."),
     ]),
 ]
 for i, (section, figs) in enumerate(FIGS, start=3):
@@ -128,7 +155,7 @@ for i, (section, figs) in enumerate(FIGS, start=3):
         C.append(code(src(getattr(F, fn))))
         C.append(code(f'fig, facts = {fn}(df)\nst.save(fig, "{fn}")\nplt.show()\nfacts'))
 
-C.append(md("""## 7. Conclusions
+C.append(md("""## 9. Conclusions
 1. **Q1 (trend and 2023).** Canada reports fewer fires each year (a significant decline since 1980), but area burned has no significant linear trend: it is dominated by extreme seasons. 2023 burned 17.6 Mha, twice any other year, started early (record May) and burned in five jurisdictions at once; 2025 (8.7 Mha) is the second-largest year, so 2023 was not an isolated spike.
 2. **Q2 (lightning vs people).** The two causes are different problems. People start more than half of all fires, mostly in spring and near settlements, and those fires stay small. Lightning starts fewer fires, in mid-summer across the remote boreal interior, and burns 84% of the land.
 3. **Q3 (concentration and size).** Area burned is extremely concentrated: 5% of fires burn 99% of the area. Among fires that escape past 1 ha, the typical lightning fire has grown steadily since 1980; human fires have not.

@@ -14,15 +14,15 @@ Four questions, answered from the Canadian National Fire Database (CNFDB):
 
 | Path | Contents |
 |---|---|
-| `canada_on_fire.ipynb` | Narrative notebook with the full code of every figure in its own cell. Runs top to bottom and regenerates all 11 figures. |
+| `canada_on_fire.ipynb` | Narrative notebook with the full code of every figure in its own cell. Runs top to bottom and regenerates all 16 figures and the 3 gallery plates. |
 | `code/fire_data.py` | Loading and cleaning (one place for every data decision), province-by-location join, check against NRCan's official totals. |
 | `code/style.py` | Visual system: palette, Inter font, figure sizes for a 6.5 in LaTeX text width. |
-| `code/figures.py` | One function per figure (`fig1_trend` ... `fig11_burn_rate_map`) plus the trend tests. |
+| `code/figures.py` | One function per figure (`fig1_trend` ... `fig16_coverage`), the gallery plates (`fig17`–`fig19`) and the trend tests. |
 | `code/prepare_geo.py` | One-off: simplifies the burn-perimeter shapefiles into `data_derived/`. |
 | `code/build_website.py` | Exports the interactive Plotly charts and map layers for `website/`. |
 | `code/build_notebook.py` | Writes `canada_on_fire.ipynb`, copying each figure's code from `figures.py`. |
 | `figures/` | Report figures, PDF (for LaTeX) and PNG (preview). |
-| `website/` | Interactive companion site (static HTML, Plotly 2.34, light/dark toggle). Live: https://omarshohidkhan.github.io/canada-on-fire/ |
+| `website/` | Interactive companion site (static HTML, Plotly 2.34, light/dark toggle, gallery). Live: https://omarshohidkhan.github.io/canada-on-fire/ (version 1: `/v1/`) |
 | `docs/design-and-plan.md` | Design rules, figure lineup and plan. |
 | `docs/chart-justifications.md` | Why each chart type, which alternatives were considered, with lecture references. |
 | `data_derived/` | Simplified burn scars 1972-2024 and province outlines (GeoPackage). |
@@ -57,7 +57,7 @@ polygon/Natural Earth downloads) are only needed to rebuild them.
 ```bash
 jupyter nbconvert --to notebook --execute --inplace canada_on_fire.ipynb   # all report figures
 python code/figures.py fig1_trend fig7_size_histogram                       # or selected figures
-python code/build_website.py                                                # website data and map layers
+python code/build_website.py                                                # website charts, gallery and map layers
 cd website && python -m http.server 8000                                    # open http://localhost:8000
 ```
 

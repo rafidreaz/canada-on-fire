@@ -729,12 +729,327 @@ def fig10_ignition_maps(df):
     return fig, facts
 
 
+# --------------------------------------------------------------------------
+# v2 additions
+# --------------------------------------------------------------------------
+def fig12_ranked_years(df):
+    """Q1 - how unusual was 2023? Every year since complete reporting, ranked."""
+    y = fd.yearly(df).loc[fd.FULL_REPORTING_FROM:].area_ha.sort_values(ascending=False)
+    med = y.median()
+    fig, ax = plt.subplots(figsize=(st.TEXT_WIDTH, 2.9))
+    cols = [st.EMBER if yr == 2023 else (st.INK if yr == 2025 else NEUTRAL) for yr in y.index]
+    ax.bar(range(len(y)), y.values, color=cols, width=0.78)
+    ax.axhline(med, color=st.INK, lw=0.7, ls=(0, (1, 2)))
+    ax.text(len(y) - 0.5, med * 1.25, f"Median year: {med / 1e6:.1f} million ha", ha="right",
+            va="bottom", fontsize=7.2, color=st.INK)
+    for i, (yr, v) in enumerate(y.head(2).items()):
+        ax.text(i, v + 0.25e6, str(yr), ha="center", va="bottom", fontsize=7, color=st.INK,
+                fontweight="bold")
+    ax.annotate("then 1989, 1995, 1981", xy=(3, y.iloc[3] + 0.2e6), xytext=(5.5, y.iloc[2] + 1.6e6),
+                fontsize=6.8, color=st.MUTED, ha="left", va="center",
+                arrowprops=dict(arrowstyle="-", color=st.MUTED, lw=0.5, shrinkB=2))
+    ax.text(1.4, y.iloc[0] * 0.92, f"2023 = {y.iloc[0] / y.iloc[1]:.1f}x the next-worst year\n"
+            f"and {y.iloc[0] / med:.0f}x the median year", fontsize=7.5, color=st.INK, va="top",
+            fontweight="semibold")
+    ax.set_xticks([])
+    ax.set_xlim(-0.7, len(y) - 0.3)
+    ax.spines["bottom"].set_visible(False)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(st.mha))
+    ax.yaxis.set_major_locator(mticker.MultipleLocator(4e6))
+    ax.yaxis.grid(True); ax.set_axisbelow(True)
+    ax.set_ylabel("Area burned (million ha)")
+    ax.set_xlabel(f"{len(y)} years, {fd.FULL_REPORTING_FROM}–{fd.LAST_YEAR}, ranked from largest to smallest",
+                  fontsize=7.5, color=st.MUTED)
+    fig.subplots_adjust(top=0.8, bottom=0.12, left=0.09, right=0.99)
+    st.headline(fig, f"2023 stands alone: {y.iloc[0] / y.iloc[1]:.1f}x the next-worst year, "
+                f"{y.iloc[0] / med:.0f}x a typical one",
+                "Area burned each year since complete reporting began, ranked. Red: 2023. Black: 2025.", y=0.995)
+    st.source_note(fig)
+    return fig, dict(median_mha=med / 1e6, ratio_next=y.iloc[0] / y.iloc[1], ratio_median=y.iloc[0] / med,
+                     rank_2025=int(list(y.index).index(2025)) + 1, top6=list(y.head(6).index))
+
+
+def fig13_cause_share_province(df):
+    """Q2 - share of fires vs share of area by cause, Canada and each province."""
+    d = df[df.province.notna()]
+    big = d.province.value_counts()
+    keep = big[big >= 1000].index
+    d = d[d.province.isin(keep)]
+    fires = pd.crosstab(d.province, d.cause, normalize="index").reindex(columns=fd.CAUSE_ORDER)
+    area = (d.pivot_table(index="province", columns="cause", values="SIZE_HA", aggfunc="sum",
+                          observed=True).reindex(columns=fd.CAUSE_ORDER).fillna(0))
+    area = area.div(area.sum(axis=1), axis=0)
+    can_f = df.cause.value_counts(normalize=True).reindex(fd.CAUSE_ORDER)
+    can_a = df.groupby("cause", observed=True).SIZE_HA.sum().reindex(fd.CAUSE_ORDER)
+    can_a = can_a / can_a.sum()
+    order = area["Lightning"].sort_values().index                  # bottom -> top
+    fires = pd.concat([fires.loc[order], can_f.to_frame("Canada").T])
+    area = pd.concat([area.loc[order], can_a.to_frame("Canada").T])
+    fig, axes = plt.subplots(1, 2, figsize=(st.TEXT_WIDTH, 3.6), sharey=True,
+                             gridspec_kw={"wspace": 0.12})
+    for ax, data, title in ((axes[0], fires, "Share of fires"), (axes[1], area, "Share of area burned")):
+        left = np.zeros(len(data))
+        for cause in fd.CAUSE_ORDER:
+            v = data[cause].fillna(0).to_numpy()
+            ax.barh(range(len(data)), v, left=left, color=st.CAUSE_COLORS[cause], height=0.7,
+                    edgecolor="white", linewidth=0.8)
+            for i, (l, w) in enumerate(zip(left, v)):
+                if cause == "Lightning" and w >= 0.12:
+                    ax.text(l + 0.015, i, f"{w:.0%}", va="center", fontsize=6.6, color="white",
+                            fontweight="bold")
+            left += v
+        ax.set_xlim(0, 1)
+        ax.xaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
+        ax.set_xticks([0, 0.5, 1])
+        ax.set_title(title, fontsize=8.5, fontweight="bold", loc="left", pad=4)
+        ax.tick_params(axis="y", length=0)
+        ax.spines["left"].set_visible(False)
+        ax.axhline(len(data) - 1.5, color=st.INK, lw=0.6)
+    axes[0].set_yticks(range(len(fires)), [str(i) for i in fires.index])
+    axes[0].get_yticklabels()[-1].set_fontweight("bold")
+    kx = 0.0
+    for cause in fd.CAUSE_ORDER:
+        fig.add_artist(plt.Rectangle((0.2 + kx, 0.835), 0.012, 0.024, fc=st.CAUSE_COLORS[cause], ec="none",
+                                     transform=fig.transFigure))
+        fig.text(0.2 + kx + 0.018, 0.847, cause, fontsize=7.8, va="center")
+        kx += 0.13
+    fig.subplots_adjust(top=0.76, bottom=0.08, left=0.2, right=0.98)
+    st.headline(fig, "Outside the Maritimes, lightning's share of area beats its share of fires by 17–68 points",
+                "Cause shares by province or territory (over 1,000 fires), sorted by lightning's share "
+                "of area. Labels: lightning share.", y=0.995)
+    st.source_note(fig)
+    gap = (area["Lightning"] - fires["Lightning"]).drop("Canada")
+    return fig, dict(gap_min=gap.min(), gap_max=gap.max(), widest=gap.idxmax(),
+                     canada=dict(fires=can_f.round(3).to_dict(), area=can_a.round(3).to_dict()))
+
+
+def fig14_concentration_curve(df):
+    """Q3 - fires ranked largest first vs cumulative share of area burned."""
+    s = df.loc[df.SIZE_HA > 0, "SIZE_HA"].sort_values(ascending=False).to_numpy()
+    cum = np.cumsum(s) / s.sum()
+    x = np.arange(1, len(s) + 1) / len(s)
+    n_half = int(np.searchsorted(cum, 0.5)) + 1
+    top1 = cum[int(len(s) * 0.01) - 1]
+    n200 = int((s >= 200).sum())
+    fig, ax = plt.subplots(figsize=(st.TEXT_WIDTH, 3.0))
+    ax.plot(x * 100, cum * 100, color=st.EMBER, lw=2.0)
+    ax.set_xscale("log")
+    ax.set_xlim(1e-4 * 100 / 1, 100)
+    ax.set_ylim(0, 101)
+    for xv, yv, lab, dx in ((n_half / len(s), 0.5, f"{n_half:,} fires ({n_half / len(s):.2%})\nburned half of all area", 2.0),
+                            (0.01, top1, f"Largest 1%: {top1:.0%} of area", 0.5),
+                            (n200 / len(s), cum[n200 - 1], f"Fires of 200 ha+ ({n200 / len(s):.1%}):\n{cum[n200 - 1]:.1%} of area", 1.0)):
+        ax.scatter([xv * 100], [yv * 100], s=26, color=st.EMBER, edgecolor="white", lw=1, zorder=4)
+        ax.annotate(lab, xy=(xv * 100, yv * 100), xytext=(xv * 100 * (0.18 if dx < 1 else (2.2 if dx == 1.0 else 6)), yv * 100 - (14 if dx < 1 else (22 if dx == 1.0 else 18))),
+                    fontsize=7.3, color=st.INK, ha="right" if dx < 1 else "left", va="center",
+                    arrowprops=dict(arrowstyle="-", color=st.INK, lw=0.6, shrinkB=3))
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:g}%"))
+    ax.set_xticks([0.01, 0.1, 1, 10, 100])
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(100, decimals=0))
+    ax.yaxis.grid(True); ax.set_axisbelow(True)
+    ax.set_xlabel("Share of fires, ranked from largest (log scale)")
+    ax.set_ylabel("Cumulative share of area")
+    fig.subplots_adjust(top=0.8, bottom=0.16, left=0.1, right=0.98)
+    st.headline(fig, f"Just {n_half:,} fires burned half of all the land burned since 1950",
+                f"Fires with a recorded size (n = {len(s):,}), largest first, against the share of all "
+                "hectares they burned.", y=0.995)
+    st.source_note(fig)
+    return fig, dict(n_half=n_half, share_half=n_half / len(s), top1=top1, n200=n200,
+                     share200=cum[n200 - 1])
+
+
+def fig15_decade_small_multiples(df):
+    """Q4 - one burn-scar map per decade, same extent, with area per year."""
+    prov, scars = _load_geo()
+    scars["dec"] = (scars.YEAR // 10) * 10
+    cen = scar_centres(scars)
+    decades = [1970, 1980, 1990, 2000, 2010, 2020]
+    ramp = sns.color_palette("rocket_r", 9)[1:7]
+    span = {1970: "1972–79", 2020: "2020–24"}
+    fig, axes = plt.subplots(2, 3, figsize=(st.TEXT_WIDTH, 3.9))
+    for ax, dec, col in zip(axes.flat, decades, ramp):
+        _base_map(ax, prov, top=0.78)
+        scars[scars.dec == dec].plot(ax=ax, color=st.EMBER, linewidth=0, zorder=1)
+        r = cen.loc[dec]
+        ax.scatter([r.x], [r.y], s=18, color=st.INK, edgecolor="white", lw=0.8, zorder=4)
+        ax.set_title(f"{dec}s" if dec not in span else span[dec], fontsize=8, fontweight="bold",
+                     loc="left", pad=1)
+        ax.text(0.99, 1.02, f"{r.mha_per_year:.1f} Mha/yr", transform=ax.transAxes, ha="right",
+                va="bottom", fontsize=7, color=st.MUTED)
+    fig.subplots_adjust(top=0.8, bottom=0.06, left=0.0, right=1.0, wspace=0.03, hspace=0.16)
+    st.headline(fig, "Every decade burns the same belt; the 2020s burned it twice as hard",
+                "Mapped burn perimeters by decade, same extent. Dot: area-weighted centre of burning. "
+                "Right: mapped area per year.", y=0.995)
+    st.source_note(fig, "Source: CNFDB burned-area polygons, NRCan; provinces: Natural Earth.")
+    return fig, dict(mha_per_year=cen.mha_per_year.round(2).to_dict())
+
+
+def fig16_coverage(df):
+    """Method - which agency reported fires in which year (reporting coverage)."""
+    from matplotlib.colors import LogNorm
+    names = {k: fd.AGENCY_SHORT[k] for k in fd.AGENCY_SHORT}
+    g = df.groupby(["agency", "YEAR"]).size().unstack(fill_value=0)
+    g = g.reindex(columns=range(fd.FIRST_YEAR, fd.LAST_YEAR + 1), fill_value=0)
+    first = g.gt(0).idxmax(axis=1).sort_values(kind="stable")
+    g = g.loc[first.index]
+    vals = g.to_numpy().astype(float); vals[vals == 0] = np.nan
+    cmap = sns.color_palette(st.FIRE_CMAP, as_cmap=True).copy(); cmap.set_bad("white")
+    fig, ax = plt.subplots(figsize=(st.TEXT_WIDTH, 3.0))
+    m = ax.pcolormesh(np.arange(fd.FIRST_YEAR, fd.LAST_YEAR + 2) - 0.5, np.arange(len(g) + 1) - 0.5, vals,
+                      cmap=cmap, norm=LogNorm(1, np.nanmax(vals)), edgecolors="white", linewidth=0.3)
+    ax.set_yticks(range(len(g)), [names[a] for a in g.index], fontsize=7.2)
+    ax.invert_yaxis()
+    ax.axvline(fd.FULL_REPORTING_FROM - 0.5, color=st.INK, lw=0.8)
+    ax.text(fd.FULL_REPORTING_FROM - 1.5, 10.5, "Trend tests start\nhere (1980) →", fontsize=7, va="center",
+            ha="right", color=st.INK)
+    ax.tick_params(length=0)
+    for s_ in ax.spines.values(): s_.set_visible(False)
+    cax = fig.add_axes([0.62, 0.86, 0.3, 0.025])
+    cb = fig.colorbar(m, cax=cax, orientation="horizontal")
+    cb.outline.set_visible(False); cb.ax.tick_params(labelsize=6.5, length=0, pad=1)
+    cb.ax.set_title("Fires reported (log scale)", fontsize=6.8, color=st.MUTED, loc="left", pad=2)
+    fig.subplots_adjust(top=0.78, bottom=0.08, left=0.2, right=0.99)
+    st.headline(fig, "Most agencies report from 1959; New Brunswick from 1980, PEI from 2018",
+                "Fires reported per agency per year. Blank: no records.", y=0.995)
+    st.source_note(fig)
+    return fig, dict(first_year={names[a]: int(y) for a, y in first.items()})
+
+
+# --------------------------------------------------------------------------
+# Gallery: the same data, drawn to be seen (artistic but exact)
+# --------------------------------------------------------------------------
+def stripe_colors(df, theme="light"):
+    """One colour per year for area burned (sequential, square-root scale)."""
+    from matplotlib.colors import PowerNorm, to_hex
+    y = fd.yearly(df).area_ha
+    cmap = sns.color_palette("rocket_r" if theme == "light" else "inferno", as_cmap=True)
+    norm = PowerNorm(0.5, vmin=0, vmax=y.max())
+    lo = 0.0 if theme == "light" else 0.08                  # dark theme: keep the low end visible
+    return y, [to_hex(cmap(lo + (1 - lo) * norm(v))) for v in y]
+
+
+def fig17_fire_stripes(df):
+    """Gallery A - one stripe per year, coloured by area burned (warming-stripes style)."""
+    y, cols = stripe_colors(df)
+    fig = plt.figure(figsize=(st.TEXT_WIDTH, 2.3))
+    ax = fig.add_axes([0, 0.16, 1, 0.6])
+    for i, c in enumerate(cols):
+        ax.add_patch(plt.Rectangle((i, 0), 1.0, 1, fc=c, ec=c, lw=0.2))
+    ax.set_xlim(0, len(cols)); ax.set_ylim(0, 1); ax.axis("off")
+    for yr in (1950, 1980, 2000, 2023):
+        i = yr - fd.FIRST_YEAR
+        ax.text(i + 0.5, -0.06, str(yr), ha="center", va="top", fontsize=7,
+                color=st.INK, fontweight="bold" if yr == 2023 else "normal")
+    st.headline(fig, "Seventy-six years of Canadian wildfire, one stripe per year",
+                "Each stripe is one year, 1950–2025, coloured by hectares burned (square-root scale; "
+                "darkest = 2023, 17.6 million ha).", y=0.995)
+    st.source_note(fig)
+    return fig, dict(max_year=int(y.idxmax()))
+
+
+def fire_rings_grid(df, bins=52):
+    """Area burned per (year, week-of-year) from fires with a full start date."""
+    d = df[(df.MONTH > 0) & (df.DAY > 0)]
+    doy = pd.to_datetime(dict(year=d.YEAR, month=d.MONTH, day=d.DAY), errors="coerce").dt.dayofyear
+    d = d.assign(w=np.minimum(((doy - 1) // 7).fillna(-1).astype(int), bins - 1))
+    d = d[d.w >= 0]
+    g = d.pivot_table(index="YEAR", columns="w", values="SIZE_HA", aggfunc="sum")
+    return g.reindex(index=range(fd.FIRST_YEAR, fd.LAST_YEAR + 1), columns=range(bins)).fillna(0)
+
+
+def fig18_fire_rings(df, theme="light", bare=False):
+    """Gallery B - each year a tree ring (1950 at the centre), each week a sector."""
+    from matplotlib.colors import PowerNorm
+    g = fire_rings_grid(df)
+    vals = g.to_numpy().copy(); vals[vals < 50] = np.nan
+    bg = "white" if theme == "light" else "#0E0B09"
+    ink = st.INK if theme == "light" else "#EEE8E1"
+    if theme == "light":
+        cmap = sns.color_palette("rocket_r", as_cmap=True).copy()
+    else:                                                       # skip inferno's near-black low end
+        from matplotlib.colors import ListedColormap
+        cmap = ListedColormap(plt.get_cmap("inferno")(np.linspace(0.18, 1, 256)))
+    cmap.set_bad((0, 0, 0, 0) if bare else bg)
+    theta = np.linspace(0, 2 * np.pi, g.shape[1] + 1)
+    r = np.arange(g.shape[0] + 1) + 18                        # hollow centre
+    fig = plt.figure(figsize=(st.TEXT_WIDTH, st.TEXT_WIDTH if bare else 6.0), facecolor="none" if bare else bg)
+    ax = fig.add_axes([0.07, 0.07, 0.86, 0.86] if bare else [0.09, 0.075, 0.82, 0.76], projection="polar",
+                      facecolor="none" if bare else bg)
+    ax.set_theta_zero_location("N"); ax.set_theta_direction(-1)
+    ax.pcolormesh(theta, r, vals, cmap=cmap, norm=PowerNorm(0.4, vmin=0, vmax=np.nanmax(vals)),
+                  shading="flat")
+    i23 = 2023 - fd.FIRST_YEAR
+    ax.plot(np.linspace(0, 2 * np.pi, 300), [r[i23] - 0.15] * 300, color=ink, lw=0.5)
+    ax.plot(np.linspace(0, 2 * np.pi, 300), [r[i23 + 1] + 0.15] * 300, color=ink, lw=0.5)
+    ax.set_ylim(0, r[-1] + 1)
+    ax.set_yticks([]); ax.grid(False); ax.spines["polar"].set_visible(False)
+    month_starts = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    ax.set_xticks([2 * np.pi * m / 365 for m in month_starts],
+                  ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                  fontsize=7.5, color=ink)
+    ax.tick_params(axis="x", pad=2)
+    for yr in (1950, 1980, 2000):
+        ax.text(np.deg2rad(-14), r[yr - fd.FIRST_YEAR] + 0.5, str(yr), fontsize=6.3, color=ink,
+                ha="center", va="center", alpha=0.8)
+    ax.annotate("2023", xy=(np.deg2rad(140), r[i23] + 0.5), xytext=(np.deg2rad(128), r[-1] + 9),
+                fontsize=7.5, color=ink, fontweight="bold", ha="center",
+                arrowprops=dict(arrowstyle="-", color=ink, lw=0.6))
+    if bare:
+        return fig, dict(peak_week=int(g.sum().idxmax()))
+    fig.text(0.0, 0.995, "Fire rings: every week of every season since 1950", ha="left", va="top",
+             fontsize=10.5, fontweight="bold", color=ink)
+    fig.text(0.0, 0.965, "One ring per year (1950 at the centre, 2025 outside), one sector per week; "
+             "colour = hectares burned by fires\nthat started that week (compressed scale, darker = more). "
+             "Blank: under 50 ha.", ha="left", va="top", fontsize=8, color=ink, alpha=0.75)
+    fig.text(0.0, 0.0, st.SOURCE + ". Fires with a full start date.", fontsize=6.8, color=ink, alpha=0.7)
+    return fig, dict(peak_week=int(g.sum().idxmax()))
+
+
+def fig19_ember_field(df, bare=False):
+    """Gallery C - all 448k fire starts as embers on a night map; size and glow by fire size."""
+    from pyproj import Transformer
+    prov, _ = _load_geo()
+    tr = Transformer.from_crs(4326, prov.crs, always_xy=True)
+    d = df[df.LATITUDE.notna()].sort_values("SIZE_HA")       # biggest drawn last, on top
+    x, y = tr.transform(d.LONGITUDE.to_numpy(), d.LATITUDE.to_numpy())
+    lg = np.log10(d.SIZE_HA.clip(0.01, 1e6).to_numpy())       # -2 .. 6
+    k = (lg + 2) / 8
+    cmap = plt.get_cmap("inferno")
+    fig = plt.figure(figsize=(st.TEXT_WIDTH, 4.6), facecolor="#0E0B09")
+    if bare:
+        fig.set_size_inches(st.TEXT_WIDTH, 4.0)
+    ax = fig.add_axes([0, 0, 1, 1] if bare else [0, 0.03, 1, 0.84], facecolor="#0E0B09")
+    prov.plot(ax=ax, color="#1A1512", edgecolor="#2A231E", linewidth=0.4, zorder=0)
+    big = k > 0.55
+    ax.scatter(x[big], y[big], s=(k[big] * 9) ** 2, color=cmap(0.85), alpha=0.06, linewidths=0,
+               zorder=1, rasterized=True)                     # glow halo around large fires
+    ax.scatter(x, y, s=0.4 + 5 * k ** 3, c=cmap(0.25 + 0.75 * k), alpha=0.55, linewidths=0,
+               zorder=2, rasterized=True)
+    ax.set_axis_off(); ax.set_aspect("equal")
+    x0, y0, x1, y1 = prov.total_bounds
+    ax.set_xlim(x0 + 0.02 * (x1 - x0), x1 - 0.04 * (x1 - x0)); ax.set_ylim(y0, y0 + 0.75 * (y1 - y0))
+    if bare:
+        return fig, dict(n=len(d))
+    fig.text(0.0, 0.995, f"Ember field: all {len(d):,} fire starts, 1950–2025", ha="left", va="top",
+             fontsize=10.5, fontweight="bold", color="#EEE8E1")
+    fig.text(0.0, 0.955, "Each point is one fire. Bigger and brighter = larger final size "
+             "(log scale); the largest fires glow.", ha="left", va="top", fontsize=8,
+             color="#A69D93")
+    fig.text(0.0, 0.0, st.SOURCE + ". Provinces: Natural Earth.", fontsize=6.8, color="#A69D93")
+    return fig, dict(n=len(d))
+
+
 ALL = {"fig1_trend": fig1_trend, "fig2_season_heatmap": fig2_season_heatmap,
        "fig9_burn_scars": fig9_burn_scars, "fig10_ignition_maps": fig10_ignition_maps,
        "fig7_size_histogram": fig7_size_histogram, "fig8_boxen_decade": fig8_boxen_decade,
        "fig3_treemap_2023": fig3_treemap_2023, "fig4_waffle_cause": fig4_waffle_cause,
        "fig5_radar_season": fig5_radar_season, "fig6_region_cause": fig6_region_cause,
-       "fig11_burn_rate_map": fig11_burn_rate_map}
+       "fig11_burn_rate_map": fig11_burn_rate_map, "fig12_ranked_years": fig12_ranked_years,
+       "fig13_cause_share_province": fig13_cause_share_province,
+       "fig14_concentration_curve": fig14_concentration_curve,
+       "fig15_decade_small_multiples": fig15_decade_small_multiples, "fig16_coverage": fig16_coverage,
+       "fig17_fire_stripes": fig17_fire_stripes, "fig18_fire_rings": fig18_fire_rings,
+       "fig19_ember_field": fig19_ember_field}
 
 
 if __name__ == "__main__":

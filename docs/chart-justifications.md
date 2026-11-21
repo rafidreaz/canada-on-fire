@@ -24,7 +24,21 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 2: When the land burns (year x month heatmap)
+## Figure 2: how unusual was 2023? (ranked bar chart)
+
+**Chosen:** one bar per year, 1980–2025, sorted from largest to smallest. 2023 in red, 2025 in ink, every other year in grey, with a dotted line at the median year.
+
+**Why:** Figure 1 answers "when"; Q1 also asks "how unusual". Sorting turns "record" into a visible distance between the first bar and the rest (ranked bars, L3). 2023 is 2.0x the next-worst year and 9x the median (1.9 Mha).
+
+**Alternatives considered:**
+- **Box plot of yearly area.** Shows that 2023 is an outlier but hides which year is which and how far 2025 sits from the pack.
+- **Histogram of yearly area.** Bins merge the top years; the point is the individual record.
+
+**Design decisions:** only two bars carry colour (angle, frame, focus, L9); bars start at zero; the years before 1980 are excluded so incomplete reporting cannot pad the bottom of the ranking.
+
+---
+
+## Figure 3: When the land burns (year x month heatmap)
 
 **Chosen:** a heatmap with years as columns and months as rows. Colour shows the hectares burned in that month, on a sequential single-ramp scale (pale to dark).
 
@@ -43,7 +57,7 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 3: 2023 by jurisdiction (treemap)
+## Figure 4: 2023 by jurisdiction (treemap)
 
 **Chosen:** a treemap of 2023's 17.6 Mha. Tile area is proportional to hectares. Fires are placed by the province or territory where they burned. The five jurisdictions over 1.5 Mha are filled in ember and the rest in neutral grey; the eight under 1 Mha are grouped as "Others" and named in a footnote. The title states the checked numbers (Quebec 4.29 and the NWT 4.25 Mha made up half the year).
 
@@ -51,14 +65,14 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 **Alternatives considered:**
 - **Pie or donut:** 13 slices are unreadable, and angles are harder to judge than lengths or areas (L8 pp.4–5).
-- **Ranked bar chart:** more precise for comparing values one against another. But the point here is the share of one year's total, and Figure 6 already uses ranked bars for the all-time comparison, so a different form avoids repeating it.
+- **Ranked bar chart:** more precise for comparing values one against another. But the point here is the share of one year's total, and Figure 8 already uses ranked bars for the all-time comparison, so a different form avoids repeating it.
 - **Choropleth of 2023:** larger provinces would look more important simply because of their size, not because of the hectares burned.
 
 **Design decisions:** in an early draft the tiles were coloured by size, which repeated what area already showed (a value ramp on categories is an anti-pattern). Colour now carries only the focus (L9 p.24). Labels sit inside the tiles, and narrow tiles get wrapped labels.
 
 ---
 
-## Figure 4: cause share of fires vs area (two waffle charts)
+## Figure 5: cause share of fires vs area (two waffle charts)
 
 **Chosen:** two 10x10 waffle charts side by side. Each square is 1% of all fires (left) or of all hectares burned (right), coloured by cause, with large direct percentage labels.
 
@@ -73,7 +87,21 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 5: two fire seasons (radar chart)
+## Figure 6: the cause split, region by region (paired 100% stacked bars)
+
+**Chosen:** two 100% stacked bar panels sharing one province axis: share of fires (left) and share of area burned (right), with Canada on top and regions sorted by lightning's share of area.
+
+**Why:** the waffles (Figure 5) give the national split; this tests whether it holds everywhere. Part-to-whole bars sum to 100% (L8), and the shared row lets each region read left to right as fires, then area. Outside New Brunswick and Nova Scotia, lightning's share of area exceeds its share of fires by 17–68 points.
+
+**Alternatives considered:**
+- **Twelve pairs of waffles or pies.** Far too many small charts to compare; pies compare angles poorly (L8).
+- **Grouped bars of absolute counts.** Large regions dominate; absolute totals are already in Figure 8.
+
+**Design decisions:** regions with under 1,000 fires (Nunavut, PEI) are left out because their percentages rest on very few fires; Unknown stays visible in the third validated colour.
+
+---
+
+## Figure 7: two fire seasons (radar chart)
 
 **Chosen:** a radar (closed polar line) chart with one spoke per month. The radius is each cause's share of its own fires, with a reading guide and two headline numbers beside it.
 
@@ -88,20 +116,33 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 6: where each cause burns (ranked stacked horizontal bars)
+## Figure 8: where each cause burns (ranked stacked horizontal bars)
 
 **Chosen:** horizontal bars of total area by the province or territory where the fire burned (a spatial join, not the reporting agency, so Parks Canada fires count in their province), split by cause, ranked by total, starting at zero, with a direct total and a lightning-share label on each bar.
 
 **Why:** we are comparing magnitudes across 13 categories, which is the bar chart's job (L3 p.14). Horizontal bars keep the long names readable, the ranking makes the order meaningful (L3 p.19), and the zero baseline keeps lengths honest (L3 p.18).
 
 **Alternatives considered:**
-- **Choropleth of totals:** big territories dominate visually just for being big. Figure 11 maps the normalised rate instead, and this chart keeps the exact totals.
+- **Choropleth of totals:** big territories dominate visually just for being big. Figure 15 maps the normalised rate instead, and this chart keeps the exact totals.
 - **Grouped bars by cause:** three bars x 13 agencies is cluttered.
 - **100% stacked bars:** these would hide that the East barely burns at all.
 
 ---
 
-## Figure 7: a few huge fires do almost all the burning (mirrored log histogram)
+## Figure 9: where fires start, by cause (small-multiple dot maps)
+
+**Chosen:** two dot maps side by side, one dot per fire start (195k lightning and 242k human), with a shared projection and extent.
+
+**Why:** small multiples let the eye compare the two geographies directly. With tiny, translucent dots, the density itself draws the pattern: lightning across the boreal interior, human fires along roads, rivers and the populated south. This is a geographic scatter plot (L3 p.8), with transparency to manage overplotting (L12).
+
+**Alternatives considered:**
+- **One map with two colours:** the colours overplot and mix.
+- **2D KDE contours (L13):** they smooth away the road and river corridors that explain human ignitions.
+- **Choropleth of counts:** loses all the within-province detail.
+
+---
+
+## Figure 10: a few huge fires do almost all the burning (mirrored log histogram)
 
 **Chosen:** a two-panel histogram on one log-scaled size axis, with the share of fires above and the share of area burned mirrored below. Bars at 200 ha or more are highlighted in ember.
 
@@ -118,7 +159,21 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 8: escaped lightning fires have grown since 1980 (boxen by decade)
+## Figure 11: how concentrated is the burning? (concentration curve)
+
+**Chosen:** fires ranked from largest to smallest on a logarithmic x-axis, against the cumulative share of all hectares burned (a Lorenz-style curve), with three marked points.
+
+**Why:** the histogram (Figure 10) shows the shape of the distribution; a cumulative curve answers Q3's wording directly, "the top x% burned y%". 766 fires (0.19%) burned half the area; the largest 1% burned 83%; fires of 200 ha or more (5.3%) burned 98.9%.
+
+**Alternatives considered:**
+- **Linear x-axis.** The whole story would sit in the first pixel.
+- **Pareto chart (bars plus cumulative line).** 408,419 bars is not readable, and it would need a second y-axis.
+
+**Design decisions:** the three numbers are labelled at their points so no value has to be read off the curve; the same denominator (fires with a recorded size) as Figure 10.
+
+---
+
+## Figure 12: escaped lightning fires have grown since 1980 (boxen by decade)
 
 **Chosen:** boxen (letter-value) plots of fire size per decade, split by cause, on a log axis, with the median of each lightning decade labelled. Only fires that grew to at least 1 ha are included.
 
@@ -135,7 +190,7 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 9: burn-scar map, 1972–2024 (GIS map of polygons)
+## Figure 13: burn-scar map, 1972–2024 (GIS map of polygons)
 
 **Chosen:** mapped perimeters of 15,578 fires drawn on Canada's provinces in a Lambert conformal conic projection, coloured by decade on a single sequential ramp. The newest decades are drawn on top.
 
@@ -152,29 +207,53 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ---
 
-## Figure 10: where fires start, by cause (small-multiple dot maps)
+## Figure 14: one map per decade (small multiples)
 
-**Chosen:** two dot maps side by side, one dot per fire start (195k lightning and 242k human), with a shared projection and extent.
+**Chosen:** six maps (1970s to 2020–24) on an identical extent and scale, each with its burn perimeters, the decade's area-weighted centre of burning and its mapped area per year.
 
-**Why:** small multiples let the eye compare the two geographies directly. With tiny, translucent dots, the density itself draws the pattern: lightning across the boreal interior, human fires along roads, rivers and the populated south. This is a geographic scatter plot (L3 p.8), with transparency to manage overplotting (L12).
+**Why:** Figure 13 draws newer scars over older ones, so earlier decades are partly hidden. Small multiples (L3, L12) give each decade its own map so the eye compares like with like. The 2020s averaged 5.5 Mha a year, double any earlier decade.
 
 **Alternatives considered:**
-- **One map with two colours:** the colours overplot and mix.
-- **2D KDE contours (L13):** they smooth away the road and river corridors that explain human ignitions.
-- **Choropleth of counts:** loses all the within-province detail.
+- **Animation only (Figure 13's scrubber).** Comparing frames depends on memory; side-by-side maps do not.
+- **One map coloured by decade.** That is Figure 13; overlap is its weakness.
+
+**Design decisions:** area per year rather than per decade, because 1972–79 and 2020–24 are short; the decade with the highest rate is the only bold label.
 
 ---
 
-## Figure 11: burning per unit of land (normalised choropleth)
+## Figure 15: burning per unit of land (normalised choropleth)
 
 **Chosen:** a choropleth of average hectares burned per 1,000 km² of land per year, 1980–2025, by the province or territory where the fires burned, in five binned classes of one sequential ramp, with every value printed on its region.
 
-**Why:** Figure 6 ranks totals, which favour the largest territories. For a map, a rate is required: a choropleth of raw counts makes big regions look important only because they are big. Normalising by land area and by years changes the answer: Saskatchewan (935) burns hardest, then Manitoba and Alberta, and the NWT, first in total area, drops to fourth (531).
+**Why:** Figure 8 ranks totals, which favour the largest territories. For a map, a rate is required: a choropleth of raw counts makes big regions look important only because they are big. Normalising by land area and by years changes the answer: Saskatchewan (935) burns hardest, then Manitoba and Alberta, and the NWT, first in total area, drops to fourth (531).
 
 **Alternatives considered:**
 - **Choropleth of totals:** misleading for the reason above.
-- **Hexbin of burn rate:** finer detail, but provinces are the units agencies manage and readers know; Figure 10 already shows the detail inside provinces.
+- **Hexbin of burn rate:** finer detail, but provinces are the units agencies manage and readers know; Figure 9 already shows the detail inside provinces.
 - **Normalising by forested area instead of land area:** fairer for Nunavut and the farmed south, but needs a forest-cover layer outside our data; the source line notes that land area includes tundra and farmland.
 
 **Design decisions:** binned classes rather than a continuous ramp, so each region reads as one class; the lowest class has a visible tint so "low" is not confused with "no data"; values printed directly so no reader has to match shades to the legend.
 
+---
+
+## Figure 16: reporting coverage (agency x year heatmap)
+
+**Chosen:** one row per reporting agency, one column per year, coloured by fires reported (log scale), blank where an agency has no records, with a line at 1980.
+
+**Why:** this is a method figure. It makes the data-quality limit visible: most agencies report from 1959, New Brunswick from 1980 and PEI from 2018, which is why every trend test starts in 1980.
+
+**Alternatives considered:**
+- **A table of first years.** Shows the start but not the gaps or the jump in volume (it is kept as the chart's data table).
+- **Linear colour scale.** Small agencies would vanish next to Ontario and Quebec.
+
+---
+
+## Gallery plates (artistic views)
+
+The gallery trades precise reading for the whole picture at once. Each plate encodes real values from the same records, and each sits next to an exact chart that answers the same question, so no claim in the report rests on a gallery plate.
+
+**Plate A, fire stripes.** One stripe per year, coloured by area burned on a square-root scale (warming-stripes style). Axes and labels are removed so colour alone carries the series; the exact values are in Figures 1 and 2.
+
+**Plate B, fire rings.** A radial heatmap: one ring per year (1950 at the centre), one sector per week, colour by hectares burned by fires that started that week. It keeps the cyclic year closed, as the radar does (L11). Inner rings are physically smaller, which under-weights early years; that is why the exact version (Figure 3) is a rectangular heatmap.
+
+**Plate C, ember field.** All 448,447 fire starts on a night map, with size and brightness both encoding final size (log scale) and the largest fires drawn last with a glow. Overplotting is part of the image; the precise comparison by cause is Figure 9.

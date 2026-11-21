@@ -95,7 +95,7 @@ def save(fig, name):
     FIG_DIR.mkdir(exist_ok=True)
     for ext in ("pdf", "png"):
         fig.savefig(FIG_DIR / f"{name}.{ext}", bbox_inches="tight", pad_inches=0.04,
-                    facecolor="white")
+                    facecolor=fig.get_facecolor())
     return FIG_DIR / f"{name}.pdf"
 
 
