@@ -1,0 +1,214 @@
+% Canada on Fire -- COMP 6934 course project report, Group 15
+% Build:  cd report && latexmk -xelatex report.tex   (or: tectonic report.tex)
+% pdfLaTeX also works; it falls back to Helvetica instead of the bundled Inter.
+% Figures are read from ../figures/, written by canada_on_fire.ipynb (or code/figures.py).
+\documentclass[12pt,letterpaper]{article}
+
+\usepackage[margin=0.75in,footskip=0.35in]{geometry}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage[scaled=0.92]{helvet}
+  \renewcommand{\familydefault}{\sfdefault}
+  \DeclareUnicodeCharacter{2212}{\ensuremath{-}}
+  \DeclareUnicodeCharacter{03C1}{\ensuremath{\rho}}
+  \DeclareUnicodeCharacter{03C4}{\ensuremath{\tau}}
+\else
+  \usepackage{fontspec}
+  \setmainfont{Inter}[
+    Path = ../assets/fonts/, Extension = .ttf,
+    UprightFont = *-Regular, BoldFont = *-Bold, ItalicFont = *-Italic,
+    Scale = 0.94]
+\fi
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}       % max width: figures never exceed the text width
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf,labelsep=period,justification=raggedright,singlelinecheck=false,skip=4pt]{caption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ink}{HTML}{222222}
+\definecolor{accent}{HTML}{B3261E}
+\definecolor{muted}{HTML}{6B655E}
+\color{ink}
+
+\graphicspath{{../figures/}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\setlength{\emergencystretch}{1.5em}
+\linespread{1.04}
+\setlist{nosep,leftmargin=1.4em}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.85}
+
+\titleformat{\section}{\large\bfseries}{\color{accent}\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{0.9em}{0.3em}
+\titlespacing*{\subsection}{0pt}{0.6em}{0.2em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{muted}Canada on Fire \textperiodcentered\ COMP 6934 Group 15}
+\fancyfoot[R]{\footnotesize\color{muted}\thepage}
+
+% \fig{file}{label}{finding}{what it shows}{what it supports}
+\newcommand{\fig}[5]{%
+  \begin{figure}[!htbp]
+    \centering
+    \includegraphics[max width=\linewidth]{#1}
+    \caption{\textbf{#3} #4 \emph{Supports:} #5}
+    \label{#2}
+  \end{figure}}
+
+\begin{document}
+
+% ---------------------------------------------------------------- title page
+\begin{titlepage}
+  \thispagestyle{empty}
+  \vspace*{1.2in}
+  {\color{muted}\small MEMORIAL UNIVERSITY OF NEWFOUNDLAND\\[2pt]
+   COMP 6934: Introduction to Data Visualization \textperiodcentered\ Fall 2026}\\[0.5in]
+  {\color{accent}\rule{0.9in}{2pt}}\\[0.25in]
+  {\fontsize{30}{34}\selectfont\bfseries Canada on Fire}\\[0.15in]
+  {\Large Seven Decades of Wildfire Patterns, Causes and Extremes}\\[0.3in]
+  {\large Course project report \textperiodcentered\ Group 15}\\[0.7in]
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Group member} & \textbf{Student ID} \\
+    \midrule
+    Md.\ Omar Shohid Khan    & 202683572 \\
+    Md Rafid Reaz            & 202684309 \\
+    Sumaiya Islam Shondhy    & 202681062 \\
+    \bottomrule
+  \end{tabular}\\[0.7in]
+  {\small Submitted to Dr.\ Karteek Popuri \textperiodcentered\ December 18, 2026}\\[0.15in]
+  {\small\color{muted}Code: \url{https://github.com/rafidreaz/canada-on-fire} (branch \texttt{moskhan})\\ Notebook: \texttt{canada\_on\_fire.ipynb}\\
+   Interactive companion: \url{https://omarshohidkhan.github.io/canada-on-fire/}}
+  \vfill
+  {\footnotesize\color{muted}Data: Canadian National Fire Database, Canadian Forest Service, Natural Resources Canada, Open Government Licence -- Canada.}
+\end{titlepage}
+\setcounter{page}{1}
+
+% ---------------------------------------------------------------- 1
+\section{Introduction}
+Canada's 2023 wildfire season burned 17.6 million hectares (Mha), twice any season before it, yet headlines treat each season on its own. The Canadian National Fire Database (CNFDB), kept by the Canadian Forest Service, records every fire reported by the provincial, territorial and Parks Canada agencies \cite{cnfdb}. Its point table (release of 2026-08-11) holds one row per fire: location, discovery date, final size in hectares, cause (human, lightning or unknown) and the reporting agency. A companion layer maps the burned perimeters of large fires from 1972. Fire scientists report that lightning starts fewer fires than people yet burns most of the land, and that fire counts and area burned have moved apart \cite{hanes}. We set out to show these patterns, test them, and make them easy to follow for a non-specialist.
+
+\section{Questions}
+\begin{enumerate}[label=\textbf{Q\arabic*.}, leftmargin=*]
+  \item Is the area burned each year increasing, and how unusual was 2023?
+  \item How do lightning- and human-caused fires differ in where they happen, when they happen, and how big they get?
+  \item Do a small number of very large fires account for most of the area burned, and has the typical fire size changed?
+  \item Where are Canada's wildfire hotspots, and have they shifted over time?
+\end{enumerate}
+
+\section{Data and method}
+\textbf{Cleaning.} We keep 1950--2025 (dropping the \texttt{YEAR = -999} code and 171 sparse pre-1950 records), leaving 448,447 fires. Unknown causes are kept and shown in their own colour, never dropped. 40,028 fires have size 0~ha (spot fires); size distributions use the 408,419 fires with a recorded size. Seasonal figures drop records with an unknown month.
+\textbf{Where a fire burned.} The agency field says who reported a fire, not where it burned (Parks Canada spans every province), so each fire is placed in a province or territory by a spatial join of its point to the province outlines.
+\textbf{Checks.} Our yearly counts and hectares match NRCan's published NFDB summary within 0.6\% in every year except 1979. Most agencies report from 1959, New Brunswick from 1980 and PEI from 2018, so every trend test uses 1980--2025 and figures shade the earlier years.
+\textbf{Tests.} Monotonic trends use Kendall's $\tau$ with a Theil--Sen slope and 95\% interval; trends in yearly medians use Spearman's $\rho$.
+\textbf{Tools.} pandas for wrangling, Matplotlib and Seaborn for every figure, SciPy for the tests and GeoPandas for the maps. One colour code holds throughout: \textcolor[HTML]{C77700}{\textbf{amber = lightning}}, \textcolor[HTML]{1F5A99}{\textbf{blue = human}}, \textcolor[HTML]{2E9E6E}{\textbf{green = unknown}}, grey = context and red = the record or focus.
+
+% ---------------------------------------------------------------- Q1
+\section{Q1: Is the area burned increasing, and how unusual was 2023?}
+Figure~\ref{fig:trend} separates the two measures that headlines often mix up. The number of fires reported each year has fallen since 1980, by about 77 a year (95\% CI 45 to 116; Kendall $p < 0.001$). Area burned has \emph{no} significant monotonic trend over the same period ($\tau = 0.17$, $p = 0.10$): it swings wildly, and the rise in its 10-year average comes from a few extreme recent seasons rather than a steady climb. Figure~\ref{fig:ranked} ranks those seasons: the runner-up, 2025, shows that 2023 was not an isolated spike.
+
+\fig{fig1_trend}{fig:trend}{Fewer fires, but extreme seasons.}
+{Area burned (top) and fires reported (bottom) per year, 1950--2025, with a 10-year average; the grey band marks years before reporting was complete.}
+{fire counts fall significantly while area burned has no significant trend; 2023 (17.6 Mha) and 2025 (8.7 Mha) are the two largest years on record.}
+
+\fig{fig12_ranked_years}{fig:ranked}{How unusual was 2023?}
+{Every year since 1980 ranked by area burned, largest first, with the median year dotted.}
+{2023 is 2.0$\times$ the next-worst year and 9$\times$ the median year (1.9 Mha).}
+
+The calendar view (Figure~\ref{fig:season}) shows how 2023 got so big. Burning is concentrated in May to August, which holds 97\% of the dated area. 2023 lit that window a month early, with 6.5 Mha burned in May alone, the largest May in 76 years, and kept burning through the summer.
+
+\fig{fig2_season_heatmap}{fig:season}{When the land burns.}
+{Hectares burned per month and year on a square-root colour scale, so ordinary seasons stay visible next to the extremes.}
+{burning is concentrated in May--August, and 2023 started early with the largest May on record.}
+
+% ---------------------------------------------------------------- Q2
+\section{Q2: How do lightning and human fires differ?}
+\textbf{How many and how much.} People start most of Canada's fires, but lightning burns most of its land (Figure~\ref{fig:waffle}). Each square is 1\% of fires (left) or of hectares (right), so the two shares can be counted rather than estimated.
+
+\fig{fig4_waffle_cause}{fig:waffle}{Share of fires versus share of area.}
+{Two 10$\times$10 waffles of all fires 1950--2025, by cause.}
+{people start 54\% of fires but cause only 12\% of the area burned; lightning starts 44\% and burns 84\%.}
+
+\textbf{When.} The two causes run on different calendars (Figure~\ref{fig:radar}). Each line shows the share of one cause's fires by month, so the shapes compare timing rather than volume. Human fires peak in May, before the spring green-up, with 42\% of human fires in March--May. Lightning fires follow the summer thunderstorms, with 90\% in June--August.
+
+\fig{fig5_radar_season}{fig:radar}{Two fire seasons.}
+{Share of each cause's fires by month of discovery, as radar lines without fill (filled radial area exaggerates the peaks).}
+{human fires peak in spring, lightning fires in midsummer.}
+
+\textbf{Where.} Figure~\ref{fig:region} ranks provinces and territories by total area burned and splits each bar by cause. Lightning dominates everywhere the land burns at scale: it caused 73--96\% of the area in every region with over 10 Mha burned, led by the Northwest Territories (38 Mha, 96\% lightning). The dot maps in Figure~\ref{fig:ignite} show why. Lightning ignitions spread across the remote boreal interior, where fires can grow for weeks; human ignitions trace highways, rail lines, rivers and the populated south, where they are found and put out quickly.
+
+\fig{fig6_region_cause}{fig:region}{Where each cause burns.}
+{Total area burned 1950--2025 by the province or territory where the fire burned, stacked by cause and ranked, zero baseline.}
+{lightning causes 73--96\% of the area in every region over 10 Mha; the Maritimes together burned under 0.2 Mha.}
+
+\fig{fig10_ignition_maps}{fig:ignite}{Where fires start, by cause.}
+{Every fire start 1950--2025 as a small translucent dot, one map per cause on identical extents.}
+{lightning starts are spread across the remote north; human starts cluster near roads and people.}
+
+% ---------------------------------------------------------------- Q3
+\section{Q3: Do a few huge fires dominate, and has typical size changed?}
+Fire size spans eight orders of magnitude, from under 0.01~ha to about 1~Mha, so Figure~\ref{fig:hist} uses logarithmic bins and mirrors two percentage panels: share of fires above, share of area below. The two shapes barely overlap: most fires are tiny (the spike near 0.1~ha is a recording habit), while almost all the area comes from a thin tail above the CNFDB's 200~ha large-fire threshold. Just 766 fires (0.19\%) burned half of all the land burned since 1950.
+
+\fig{fig7_size_histogram}{fig:hist}{A few huge fires do almost all the burning.}
+{Log-binned fire size; top panel is the share of fires in each size band, bottom panel the share of area. Red bars are fires of 200~ha or more.}
+{5.3\% of fires burned 98.9\% of the area; the largest 1\% burned 83\%.}
+
+Has the typical fire grown? Because 23.5\% of records are logged at exactly 0.1~ha, we look at fires that escaped past 1~ha. Figure~\ref{fig:boxen} shows their full size distribution by decade and cause. Among escaped lightning fires the yearly median has risen since 1980 (Spearman $\rho = 0.68$, $p < 0.001$; 0.66 with 2023 removed, so one year does not drive it). Human fires show no significant change ($\rho = 0.28$, $p = 0.06$). Part of the rise may reflect policy: remote lightning fires are increasingly monitored rather than fought.
+
+\fig{fig8_boxen_decade}{fig:boxen}{Escaped lightning fires have grown since 1980.}
+{Boxen plots (nested quantile boxes) of fires over 1~ha by decade and cause, log scale; the 2020s hold six seasons.}
+{the typical escaped lightning fire has grown ($\rho = 0.68$); human fires have not.}
+
+% ---------------------------------------------------------------- Q4
+\section{Q4: Where are the hotspots, and have they shifted?}
+Figure~\ref{fig:scars} draws all 15,578 mapped burn perimeters, 1972--2024, with each decade's area-weighted centre of burning. The hotspot is a stable band of boreal forest from northern British Columbia to Quebec. It has not moved north: the centre stays between 57.7$^\circ$ and 59.7$^\circ$N in every decade. What has changed is the amount and the longitude: burning per year doubled in the 2020s, and the centre moved west toward northern Alberta.
+
+\fig{fig9_burn_scars}{fig:scars}{Half a century of burn scars.}
+{Mapped burn perimeters 1972--2024 on a Lambert conformal conic projection, coloured by decade; dots are each decade's area-weighted centre of burning; inset, mapped area per year.}
+{the fire belt is stable in latitude, but burning per year doubled in the 2020s and its centre moved about 370~km west of its 1980s position.}
+
+Totals favour big territories, so Figure~\ref{fig:rate} scales area burned by land area: Saskatchewan (935~ha per 1,000~km$^2$ a year) leads, and the Northwest Territories, first in total area, falls to fourth (531).
+
+\fig{fig11_burn_rate_map}{fig:rate}{Burning per unit of land.}
+{Average hectares burned per 1,000~km$^2$ of land per year, 1980--2025, in five classes on one sequential ramp, with every value printed on the map.}
+{per unit of land Saskatchewan, Manitoba and Alberta burn hardest; the NWT is fourth.}
+
+% ---------------------------------------------------------------- conclusions
+\section{Conclusions}
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+& \textbf{What we conclude} & \textbf{Evidence} \\
+\midrule
+Q1 & Fewer fires each year; area burned has no significant trend and is driven by extreme seasons. 2023 doubled any other year; 2025 was second. & Figs.~\ref{fig:trend}--\ref{fig:season} \\
+Q2 & People start most fires, in spring near settlements, and they stay small; lightning fires start in midsummer in the remote north and burn 84\% of the area. & Figs.~\ref{fig:waffle}--\ref{fig:ignite} \\
+Q3 & 5\% of fires burn 99\% of the area; 766 fires burned half. The typical escaped lightning fire has grown since 1980; human fires have not. & Figs.~\ref{fig:hist}--\ref{fig:boxen} \\
+Q4 & The boreal belt is fixed in latitude, but burning per year doubled in the 2020s and moved west. Per unit of land, the Prairies burn hardest. & Figs.~\ref{fig:scars}--\ref{fig:rate} \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Limitations.} Reporting is incomplete before 1980; the 2020s hold six seasons; trends are associations, confounded with suppression policy and better mapping; cause is unknown for 4\% of the area. \textbf{Reproducibility.} \texttt{canada\_on\_fire.ipynb} regenerates every figure.
+
+{\footnotesize\renewcommand{\section}[2]{\vspace{0.2em}\noindent\textbf{\normalsize References}}%
+\begin{thebibliography}{9}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}\setlength{\topsep}{2pt}
+\bibitem{cnfdb} Natural Resources Canada (2026). \emph{Canadian National Fire Database (CNFDB)}, points (2026-08-11) and polygons. \url{https://cwfis.cfs.nrcan.gc.ca/en/fire-history}
+\bibitem{hanes} Hanes, C.\,C., Wang, X., Jain, P., et al. (2019). Fire-regime changes in Canada over the last half century. \emph{Canadian Journal of Forest Research}, 49, 256--269. doi:10.1139/cjfr-2018-0293
+\end{thebibliography}}
+
+\end{document}

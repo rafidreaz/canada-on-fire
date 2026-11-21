@@ -693,7 +693,7 @@ def fig11_burn_rate_map(df):
     cb.ax.set_title("Hectares burned per 1,000 km² of land per year", fontsize=7, color=st.MUTED,
                     loc="left", pad=3)
     top = prov.rate.sort_values(ascending=False)
-    fig.subplots_adjust(top=0.87, bottom=0.0, left=0.0, right=1.0)
+    fig.subplots_adjust(top=0.87, bottom=0.045, left=0.0, right=1.0)
     st.headline(fig, "Scaled by land area, Saskatchewan burns hardest and the NWT drops to fourth",
                 f"Average yearly area burned per 1,000 km² of land, {fd.FULL_REPORTING_FROM}–{fd.LAST_YEAR}, "
                 "by the province or territory where fires burned.", y=0.995)

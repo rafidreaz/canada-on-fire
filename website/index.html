@@ -356,7 +356,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
         <header><p class="eyebrow">Figure 8 · Ranked stacked bars</p><h3>Lightning burns most of the land in every major fire region</h3><p class="sub">Total area burned 1950–2025 by the province or territory where the fire burned, and by cause. Ranked, zero baseline.</p></header>
         <div class="chart" id="c6_bars" role="img" aria-label="Stacked bars of total area burned by province and cause: the Northwest Territories lead with 38 million hectares, 96 percent from lightning"></div>
         <footer>
-          <p>The Northwest Territories burned 38 million hectares, 96% of it from lightning, and in every region with over 10 million hectares burned, lightning caused 74–96% of the area. Nova Scotia, New Brunswick and PEI together burned under 0.2 million (their records start in 1960, 1980 and 2018).</p>
+          <p>The Northwest Territories burned 38 million hectares, 96% of it from lightning, and in every region with over 10 million hectares burned, lightning caused 73–96% of the area. Nova Scotia, New Brunswick and PEI together burned under 0.2 million (their records start in 1960, 1980 and 2018).</p>
           <details class="why"><summary>Why this chart</summary><div><p>Comparing magnitudes across 13 categories is a bar chart's job. Bars are ranked rather than alphabetical and start at zero (Lecture 3). A map of the same totals would let large territories dominate by size alone.</p></div></details>
         </footer>
       </figure>
@@ -523,6 +523,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
         <li>Python: pandas, Matplotlib and Seaborn for the printed figures; Plotly Express for this site; GeoPandas for the maps.</li>
         <li>Every figure is reproducible from one notebook (<code>canada_on_fire.ipynb</code>), which holds each figure's full code.</li>
         <li>Code: <a href="https://github.com/rafidreaz/canada-on-fire/tree/moskhan" rel="noopener">github.com/rafidreaz/canada-on-fire</a> (branch <code>moskhan</code>).</li>
+        <li>Printed report: <a href="report.pdf">report.pdf</a> (8 pages, 11 of the figures here, renumbered 1–11).</li>
       </ul></div>
     </div>
     <div class="wide">
@@ -541,7 +542,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
 <footer class="site gutter">
   <div class="in wide">
     <span>Group 15: Md. Omar Shohid Khan, Md Rafid Reaz, Sumaiya Islam Shondhy · COMP 6934, Memorial University · Instructor: Dr. Karteek Popuri</span>
-    <span>Data: <a href="https://cwfis.cfs.nrcan.gc.ca/en/fire-history" rel="noopener">CNFDB, Natural Resources Canada</a> · <a href="https://github.com/rafidreaz/canada-on-fire/tree/moskhan" rel="noopener">Code and notebook</a></span>
+    <span>Data: <a href="https://cwfis.cfs.nrcan.gc.ca/en/fire-history" rel="noopener">CNFDB, Natural Resources Canada</a> · <a href="https://github.com/rafidreaz/canada-on-fire/tree/moskhan" rel="noopener">Code and notebook</a> · <a href="report.pdf">Report (PDF)</a></span>
   </div>
 </footer>
 
@@ -823,7 +824,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
   function renderAll() { ids.forEach(render); drawRamp(); drawStripes(); }
 
   // one retry per file, so a dropped connection does not leave an empty chart
-  const V = "v2.3";                                   // bump on every deploy: cached data never mixes with new code
+  const V = "v2.4";                                   // bump on every deploy: cached data never mixes with new code
   const getJSON = u => { const url = u + "?" + V; return fetch(url).catch(() => fetch(url)).then(r => r.json()); };
   Promise.all([
     getJSON("data/summary.json").then(s => { drawWaffles(s); drawTopYears(s); drawStripes(s); }),

@@ -41,7 +41,7 @@ These come from the course (L1 p.30, L3, L7, L8, L9, L11, L12, L13).
 | 5 | fig4_waffle_cause | Q2 | Two waffles (L8) | People start 54% of fires; lightning burns 84% of the area |
 | 6 | fig13_cause_share_province | Q2 | Paired 100% stacked bars (L8) | Lightning's share of area beats its share of fires by 17–68 points outside NB and NS |
 | 7 | fig5_radar_season | Q2 | Radar lines, no fill (L11) | Human fires peak in May, lightning in July |
-| 8 | fig6_region_cause | Q2 | Ranked stacked bars (L3) | Lightning causes 74–96% of the area in every region over 10 Mha |
+| 8 | fig6_region_cause | Q2 | Ranked stacked bars (L3) | Lightning causes 73–96% of the area in every region over 10 Mha |
 | 9 | fig10_ignition_maps | Q2 | Dot maps, small multiples (L3, L12) | Lightning starts in the remote interior; human starts near people |
 | 10 | fig7_size_histogram | Q3 | Mirrored log histogram (L7) | 5.3% of fires burn 98.9% of the area; the top 1% burn 83% |
 | 11 | fig14_concentration_curve | Q3 | Cumulative (Lorenz-style) curve | 766 fires (0.19%) burned half of all the area |
@@ -54,7 +54,7 @@ These come from the course (L1 p.30, L3, L7, L8, L9, L11, L12, L13).
 | B | fig18_fire_rings | Gallery | Radial heatmap (year rings × week) | Every season burns May–August; 2023 lit up early |
 | C | fig19_ember_field | Gallery | Glow point map of all 448,447 starts | Large fires in the remote north, small ones near people |
 
-Sixteen figures of thirteen distinct types plus three gallery plates, against a minimum of five plot types. The 8-page report will use a subset (see the LaTeX step); the website and notebook show all of them. Version 1 of the site (11 figures) is kept at `/v1/`.
+Sixteen figures of thirteen distinct types plus three gallery plates, against a minimum of five plot types. The 8-page report uses eleven of them (see step 3 of the plan); the website and notebook show all of them. Version 1 of the site (11 figures) is kept at `/v1/`.
 
 ## Visual system
 
@@ -83,5 +83,5 @@ Project/
 
 1. Done: data module, style, figures, notebook, reproducibility check, website.
 2. Done: expert review of our work and the teammates' drafts; adopted their strongest ideas (location-based provinces, official-totals check, per-year normalisation, normalised choropleth, concentration callout, conclusions section) and fixed every must-fix item.
-3. Write the LaTeX report (12pt, title page, 8 body pages), choosing the figure subset that fits.
+3. Done: LaTeX report `report/report.tex` (12pt, title page, 8 body pages). Report Figures 1–11 are site figures 1, 2, 3, 5, 7, 8, 9, 10, 12, 13 and 15; the treemap, the province share bars, the concentration curve, the decade small multiples and the coverage heatmap stay on the site and in the notebook.
 4. Final consistency pass across report, notebook and website.

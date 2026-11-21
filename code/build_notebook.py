@@ -105,7 +105,7 @@ FIGS = [
         ("fig5_radar_season", "Figure 7: Two fire seasons",
          "Human fires peak in May (42% in March–May); 90% of lightning fires start in June–August."),
         ("fig6_region_cause", "Figure 8: Where each cause burns",
-         "Lightning burns 74–96% of the area in every province or territory with over 10 Mha burned; "
+         "Lightning burns 73–96% of the area in every province or territory with over 10 Mha burned; "
          "the Maritimes together burned under 0.2 Mha."),
         ("fig10_ignition_maps", "Figure 9: Where fires start, by cause",
          "Lightning ignitions spread across the remote boreal interior; human ignitions trace roads, "

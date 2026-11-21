@@ -22,6 +22,7 @@ Four questions, answered from the Canadian National Fire Database (CNFDB):
 | `code/build_website.py` | Exports the interactive Plotly charts and map layers for `website/`. |
 | `code/build_notebook.py` | Writes `canada_on_fire.ipynb`, copying each figure's code from `figures.py`. |
 | `figures/` | Report figures, PDF (for LaTeX) and PNG (preview). |
+| `report/report.tex` | The 8-page LaTeX report (12pt, title page plus 8 body pages, 11 of the 16 figures renumbered 1–11). Built with `cd report && tectonic report.tex`; the PDF is also on the website as `report.pdf`. |
 | `website/` | Interactive companion site (static HTML, Plotly 2.34, light/dark toggle, gallery). Live: https://omarshohidkhan.github.io/canada-on-fire/ (version 1: `/v1/`) |
 | `docs/design-and-plan.md` | Design rules, figure lineup and plan. |
 | `docs/chart-justifications.md` | Why each chart type, which alternatives were considered, with lecture references. |
@@ -58,6 +59,7 @@ polygon/Natural Earth downloads) are only needed to rebuild them.
 jupyter nbconvert --to notebook --execute --inplace canada_on_fire.ipynb   # all report figures
 python code/figures.py fig1_trend fig7_size_histogram                       # or selected figures
 python code/build_website.py                                                # website charts, gallery and map layers
+cd report && tectonic report.tex && cd ..                                 # report PDF (uses figures/*.pdf)
 cd website && python -m http.server 8000                                    # open http://localhost:8000
 ```
 
