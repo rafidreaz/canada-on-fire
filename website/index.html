@@ -796,7 +796,8 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
   function renderAll() { ids.forEach(render); drawRamp(); drawStripes(); }
 
   // one retry per file, so a dropped connection does not leave an empty chart
-  const getJSON = url => fetch(url).catch(() => fetch(url)).then(r => r.json());
+  const V = "v2.1";                                   // bump on every deploy: cached data never mixes with new code
+  const getJSON = u => { const url = u + "?" + V; return fetch(url).catch(() => fetch(url)).then(r => r.json()); };
   Promise.all([
     getJSON("data/summary.json").then(s => { drawWaffles(s); drawTopYears(s); drawStripes(s); }),
     getJSON("data/map_meta.json").then(setupMaps),
