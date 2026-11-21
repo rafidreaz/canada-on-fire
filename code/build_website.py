@@ -120,7 +120,10 @@ c5 = px.line_polar(mlong, r="pct", theta="month", color="cause", line_close=True
 for tr in c5.data:
     tr.update(meta=tr.name, mode="lines+markers", hovertemplate=tr.name + ", %{theta}: %{r:.1f}% of its fires<extra></extra>")
 c5.update_layout(height=420, legend_title_text="", polar=dict(angularaxis=dict(direction="clockwise", rotation=90),
-                                        radialaxis=dict(ticksuffix="%", angle=90, tickangle=90, dtick=10)))
+                                        radialaxis=dict(ticksuffix="%", angle=90, tickangle=90, tickvals=[10, 20, 30, 40])),
+                 meta=dict(table=dict(head=["Month", "Lightning (% of its fires)", "Human (% of its fires)"],
+                     rows=[[m, r(share.loc[i, "Lightning"] * 100, 1), r(share.loc[i, "Human"] * 100, 1)]
+                           for i, m in zip(range(1, 13), ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])])))
 dump(c5, "c5_radar")
 
 # ---- c6: region x cause stacked bars ----------------------------------------
@@ -147,7 +150,10 @@ g = s.groupby(cut, observed=False).agg(["size", "sum"])
 mid = np.log10(np.sqrt(edges[:-1] * edges[1:]))   # plot on log10 values: equal-width bars
 big = edges[:-1] >= 199.9
 c7 = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.04)
-lab = [f"{a:,.2g}–{b:,.2g} ha" for a, b in zip(edges[:-1], edges[1:])]
+def _ha(v):
+    v = float(f"{v:.2g}")
+    return f"{v:,.0f}" if v >= 1 else f"{v:g}"
+lab = [f"{_ha(a)}–{_ha(b)} ha" for a, b in zip(edges[:-1], edges[1:])]
 c7.add_trace(go.Bar(x=mid, width=0.22, y=g["size"] / g["size"].sum() * 100, meta=["ember" if b else "neutral" for b in big],
                     customdata=lab, hovertemplate="%{customdata}: %{y:.2f}% of fires<extra></extra>"), 1, 1)
 c7.add_trace(go.Bar(x=mid, width=0.22, y=-(g["sum"] / g["sum"].sum() * 100), meta=["ember" if b else "neutral" for b in big],
@@ -188,7 +194,7 @@ c12.update_xaxes(type="category", showticklabels=False, showgrid=False, title_te
 c12.update_yaxes(title_text="Area burned (Mha)", rangemode="tozero", dtick=4)
 c12.update_layout(height=360, showlegend=False, bargap=0.18, meta=dict(table=dict(
     head=["Rank", "Year", "Area burned (Mha)"],
-    rows=[[i + 1, int(k), r(v / 1e6, 2)] for i, (k, v) in enumerate(yr.items())])))
+    rows=[[i + 1, str(k), r(v / 1e6, 2)] for i, (k, v) in enumerate(yr.items())])))
 dump(c12, "c12_ranked")
 
 # ---- c13: share of fires vs share of area, by province ----------------------
@@ -234,16 +240,23 @@ c14 = go.Figure(go.Scatter(x=(idx + 1) / n * 100, y=cum[idx] * 100, mode="lines"
 pts = [(n_half, f"{n_half:,} fires burned half"), (i1 + 1, f"Largest 1%: {cum[i1]:.0%}"),
        (n200, f"200 ha+ ({n200 / n:.1%}): {cum[n200 - 1]:.1%}")]
 c14.add_trace(go.Scatter(x=[k / n * 100 for k, _ in pts], y=[cum[k - 1] * 100 for k, _ in pts],
-                         mode="markers+text", text=[t for _, t in pts], name="Marked points", meta="ink",
-                         textposition=["middle right", "bottom right", "bottom right"],
-                         hovertemplate="%{text}<extra></extra>"))
+                         mode="markers+text", text=[t for _, t in pts[:2]] + [""], name="Marked points", meta="ink",
+                         textposition=["middle right", "middle left", "middle left"],
+                         customdata=[t for _, t in pts], hovertemplate="%{customdata}<extra></extra>"))
+# the plateau leaves no room beside the 200 ha point, so its label sits below it on a short leader
+c14.add_annotation(x=np.log10(n200 / n * 100), y=cum[n200 - 1] * 100, text=f"200 ha+ ({n200 / n:.1%})<br>{cum[n200 - 1]:.1%}", ax=0, ay=88,
+                   showarrow=True, arrowhead=0, arrowwidth=1, font=dict(size=13))
 c14.update_xaxes(type="log", title_text="Share of fires, ranked from largest (log scale)", ticksuffix="%",
                  tickvals=[0.01, 0.1, 1, 10, 100], ticktext=["0.01%", "0.1%", "1%", "10%", "100%"], showgrid=False)
 c14.update_yaxes(title_text="Cumulative share of area", ticksuffix="%", range=[0, 102])
 c14.update_layout(height=380, showlegend=False, meta=dict(table=dict(
     head=["Largest fires", "Count", "Share of area (%)"],
-    rows=[[f"Top {q}", f"{max(1, int(n * q / 100)):,}", r(cum[max(1, int(n * q / 100)) - 1] * 100, 1)]
-          for q in (0.01, 0.1, 0.19, 1, 5.3, 10, 50)])))
+    rows=[[f"Top {q:g}%", f"{max(1, int(n * q / 100)):,}", r(cum[max(1, int(n * q / 100)) - 1] * 100, 1)]
+          for q in (0.01, 0.1)]
+         + [[f"Burned half ({n_half / n:.2%})", f"{n_half:,}", r(cum[n_half - 1] * 100, 1)],
+            [f"Top 1%", f"{i1 + 1:,}", r(cum[i1] * 100, 1)],
+            [f"200 ha or more ({n200 / n:.1%})", f"{n200:,}", r(cum[n200 - 1] * 100, 1)]]
+         + [[f"Top {q:g}%", f"{int(n * q / 100):,}", r(cum[int(n * q / 100) - 1] * 100, 1)] for q in (10, 50)])))
 dump(c14, "c14_concentration")
 
 # ---- c16: reporting coverage (agency x year) --------------------------------
@@ -262,9 +275,10 @@ c16.add_vline(x=1979.5, line_width=1.2)
 c16.add_annotation(x=1979.5, y=1, yref="paper", yanchor="bottom", xanchor="right", showarrow=False,
                    text="Trend tests start here (1980) →", font=dict(size=12))
 c16.update_yaxes(autorange="reversed")
+c16.update_xaxes(range=[fd.FIRST_YEAR - 0.5, fd.LAST_YEAR + 0.5])   # fixed: the label must not widen the axis
 c16.update_layout(height=420, margin=dict(l=150, r=16, t=44, b=36), meta=dict(table=dict(
     head=["Agency", "First year", "Fires 1950–2025"],
-    rows=[[nm, int(first[a]), f"{int(g16.loc[a].sum()):,}"] for nm, a in zip(names16, g16.index)])))
+    rows=[[nm, str(first[a]), f"{int(g16.loc[a].sum()):,}"] for nm, a in zip(names16, g16.index)])))
 dump(c16, "c16_coverage")
 
 # ---- summary numbers ---------------------------------------------------------

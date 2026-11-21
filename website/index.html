@@ -95,6 +95,8 @@ table.data th, table.data td { padding: 0.3rem 0.8rem 0.3rem 0; text-align: righ
 table.data th:first-child, table.data td:first-child { text-align: left; }
 table.data th { font: 600 0.72rem/1.2 var(--f-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .tablewrap { overflow-x: auto; }
+.plate { grid-template-columns: minmax(0, 1fr); }
+.plate > *, .plate footer > * { min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .stack img { transition: none; } }
 
 /* ---- hero ---- */
@@ -702,6 +704,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
     Unknown: css("--unknown"), ember: css("--ember"), neutral: css("--neutral"), muted: css("--muted-fill"), ink: css("--ink")
   })[role] || css("--neutral");
 
+  const narrow = () => innerWidth < 640;
   function themed(id) {
     const spec = JSON.parse(JSON.stringify(specs[id]));
     const ink = css("--ink"), muted = css("--muted"), line = css("--line"), surface = css("--surface");
@@ -732,7 +735,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
     if (!L.xaxis) L.xaxis = ax; if (!L.yaxis) L.yaxis = ax;
     if (L.polar) { L.polar.bgcolor = "rgba(0,0,0,0)"; L.polar.angularaxis = Object.assign(L.polar.angularaxis || {}, { color: muted, gridcolor: line, linecolor: line }); L.polar.radialaxis = Object.assign(L.polar.radialaxis || {}, { color: muted, gridcolor: line, linecolor: line }); }
     if (L.shapes) L.shapes.forEach(s => { if (s.type === "line") s.line = Object.assign(s.line || {}, { color: ink }); else s.fillcolor = css("--shade"); });
-    if (L.annotations) L.annotations.forEach(a => { a.font = Object.assign(a.font || {}, { color: ink, family: "Inter", size: a.font && a.font.size || 13 }); });
+    if (L.annotations) L.annotations.forEach(a => { a.font = Object.assign(a.font || {}, { color: ink, family: "Inter", size: a.font && a.font.size || 13 }); if (a.showarrow) a.arrowcolor = muted; });
     if (L.coloraxis) {
       L.coloraxis.colorscale = [0, .25, .5, .75, 1].map((v, i) => [v, css(`--heat-${i}`)]);
       L.coloraxis.colorbar = Object.assign(L.coloraxis.colorbar || {}, { tickfont: { color: muted }, outlinewidth: 0, title: { text: "Mha", font: { color: muted } } });
@@ -746,14 +749,31 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
     });
     if (id === "c3_treemap" || id === "c2_heatmap") L.margin = { l: id === "c2_heatmap" ? 44 : 4, r: 4, t: 8, b: 32 };
     if (id === "c5_radar") L.margin = { l: 40, r: 40, t: 48, b: 32 };
-    if (id === "c13_share") L.showlegend = false;
+    if (id === "c13_share") {
+      L.showlegend = false;
+      if (narrow()) {                                   // two panels share a phone width: shorter titles, no touching ticks
+        L.xaxis = Object.assign(L.xaxis, { tickvals: [0, 50], ticktext: ["0%", "50%"] });
+        L.annotations.forEach((a, i) => { a.text = i ? "Area burned" : "Fires"; a.font.size = 13; });
+      }
+    }
+    // phones: the horizontal legend wraps, so give it its own band above the plot
+    if (narrow() && L.showlegend !== false && spec.data.filter(t => t.name && t.showlegend !== false).length > 1) {
+      L.margin = Object.assign({}, L.margin, { t: (L.margin.t || 24) + 28 });
+      L.legend.y = 1.02; L.legend.yanchor = "bottom";
+      if (L.polar) { L.legend.y = 1.12; }
+    }
     return spec;
   }
   /* ---------- table view for every chart (dataviz: tooltips never gate a value) ---------- */
-  const fmt = v => v === null || v === undefined ? "" : typeof v === "number" ? (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : (+v.toFixed(2)).toLocaleString()) : v;
-  function tableFor(spec) {
+  // one decimal count per column (up to 2), so the numbers line up on the decimal point
+  const decs = v => typeof v !== "number" || Math.abs(v) >= 100 || Number.isInteger(v) ? 0 : Math.min(2, (String(+v.toFixed(2)).split(".")[1] || "").length);
+  const fmt = (v, dp) => v === null || v === undefined ? "" : typeof v !== "number" ? v
+    : v > 0 && v < 0.005 ? "<0.01"
+    : Math.abs(v) >= 100 ? Math.round(v).toLocaleString()
+    : v.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  function tableFor(spec, id) {
     if (spec.layout.meta && spec.layout.meta.table) return spec.layout.meta.table;
-    const d = spec.data;
+    let d = spec.data;
     if (d[0].type === "treemap") {
       return { head: ["Province / territory", "Area burned 2023 (Mha)"], rows: d[0].labels.map((l, i) => [l, d[0].values[i]]).sort((a, b) => b[1] - a[1]) };
     }
@@ -768,6 +788,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
     };
     const valOf = (t, i) => { const v = t.r ? t.r[i] : (t.orientation === "h" ? t.x[i] : t.y[i]); return v === null ? null : Math.abs(v); };
     const keys = [], rows = {};
+    d = d.filter(t => (t.r || t.y || []).length > 1);                  // single-point labels are not series
     d.forEach((t, ti) => {
       const n = (t.r || t.y || []).length;
       for (let i = 0; i < n; i++) {
@@ -776,15 +797,20 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
       }
     });
     const names = d.map((t, i) => t.name || (spec.layout.yaxis2 && i ? "Share of area (%)" : "Share of fires (%)"));
-    let out = keys.map(k => [k, ...d.map((_, ti) => rows[k][ti] ?? null)]);
+    let out = keys.map(k => [k, ...d.map((_, ti) => rows[k][ti] ?? null)])
+      .filter(r => r.slice(1).some(v => v));                          // drop empty rows (e.g. unused size bins)
     if (d[0].orientation === "h") out = out.reverse();                 // largest first, as drawn
-    return { head: ["", ...names], rows: out };
+    const first = d[0].orientation === "h" ? "Province / territory"
+      : typeof keys[0] === "number" && keys[0] > 1900 ? "Year" : "Size band";
+    const unit = { c6_bars: " (Mha)", c8_medians: " median (ha)" }[id] || "";
+    return { head: [first, ...names.map(n => n + unit)], rows: out };
   }
   function addTable(id) {
     const host = document.getElementById(id).closest(".plate").querySelector("footer");
     if (!host || host.querySelector(".dt")) return;
-    const { head, rows } = tableFor(specs[id]);
-    host.insertAdjacentHTML("afterbegin", `<details class="why dt"><summary>Data table</summary><div class="tablewrap"><table class="data"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((v, j) => `<td>${j ? fmt(v) : v}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`);
+    const { head, rows } = tableFor(specs[id], id);
+    const dp = head.map((_, j) => Math.max(0, ...rows.map(r => decs(r[j]))));
+    host.insertAdjacentHTML("afterbegin", `<details class="why dt"><summary>Data table</summary><div class="tablewrap"><table class="data"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((v, j) => `<td>${j ? fmt(v, dp[j]) : v}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`);
   }
 
   function render(id) {
@@ -797,7 +823,7 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
   function renderAll() { ids.forEach(render); drawRamp(); drawStripes(); }
 
   // one retry per file, so a dropped connection does not leave an empty chart
-  const V = "v2.2";                                   // bump on every deploy: cached data never mixes with new code
+  const V = "v2.3";                                   // bump on every deploy: cached data never mixes with new code
   const getJSON = u => { const url = u + "?" + V; return fetch(url).catch(() => fetch(url)).then(r => r.json()); };
   Promise.all([
     getJSON("data/summary.json").then(s => { drawWaffles(s); drawTopYears(s); drawStripes(s); }),
@@ -806,6 +832,8 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
   ]).catch(err => console.error("Chart data failed to load:", err));
 
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  let wasNarrow = narrow();                           // re-layout only when crossing the phone breakpoint
+  addEventListener("resize", () => { if (narrow() !== wasNarrow) { wasNarrow = narrow(); ids.forEach(render); } });
   new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 })();
 </script>
