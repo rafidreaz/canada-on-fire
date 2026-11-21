@@ -17,7 +17,7 @@ HALF_WIDTH = 3.15
 # ---- palette ----------------------------------------------------------------
 LIGHTNING = "#C77700"   # amber (passes 3:1 contrast + CVD checks)
 HUMAN = "#1F5A99"       # deep blue
-UNKNOWN = "#8C8C8C"     # neutral grey: "unknown" recedes on purpose, always direct-labelled
+UNKNOWN = "#2E9E6E"     # green: third categorical slot (validated all-pairs with amber/blue)
 CONTEXT = "#C9C9C9"     # de-emphasised marks
 INK = "#222222"         # text and focal lines
 MUTED = "#6B6B6B"       # secondary text

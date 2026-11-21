@@ -17,6 +17,7 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 **Design decisions (L9 angle, frame and focus; L3 pp.4–6):**
 - **Focus:** the context (yearly values) is grey, the signal (the moving average) is in colour, and the 2023 record is annotated in red with its multiple of the next-worst year. This follows the FT example in L3 p.4.
+- **Evidence:** each panel carries a trend test over 1980–2025 (Kendall's τ, Theil–Sen slope with 95% CI). Fires fall significantly (−77 a year, p < 0.001); area burned does not (τ = 0.17, p = 0.10). The title was rewritten to claim only that: fewer fires, extreme worst seasons, with 2023 and 2025 (8.7 Mha, annotated) the two largest years.
 - **Frame:** the years before 1980 are shaded as "incomplete reporting", because several agencies only report fully from the 1970s–80s. That keeps the early rise in fire counts from being misread as a real change.
 - **Trailing rather than centred average:** a centred window needs future years, so its last five points would use a shrinking window. A trailing window is computed the same way for every year.
 - **Labels and baselines:** labels sit directly on the lines instead of in a legend, both y-axes start at zero, and the wide aspect ratio avoids exaggerating the slope (L3 p.6).
@@ -44,7 +45,7 @@ The report's "why this chart" text comes from this file. For each figure it reco
 
 ## Figure 3: 2023 by jurisdiction (treemap)
 
-**Chosen:** a treemap of 2023's 17.6 Mha. Tile area is proportional to hectares. The four headline jurisdictions are filled in ember and the rest in neutral grey; the seven smallest are grouped and named in a footnote.
+**Chosen:** a treemap of 2023's 17.6 Mha. Tile area is proportional to hectares. Fires are placed by the province or territory where they burned. The five jurisdictions over 1.5 Mha are filled in ember and the rest in neutral grey; the eight under 1 Mha are grouped as "Others" and named in a footnote. The title states the checked numbers (Quebec 4.29 and the NWT 4.25 Mha made up half the year).
 
 **Why a treemap:** the question is part-to-whole ("how was 2023's total split?"). L8 recommends treemaps over sunbursts when there are many parts (p.14) and suggests highlighting particular tiles with colour (p.15). Area is proportional to value, with consistent scaling (p.17).
 
@@ -83,18 +84,18 @@ The report's "why this chart" text comes from this file. For each figure it reco
 - **Grouped bar chart of 12 months:** accurate, but it breaks the cycle at December–January, and the two seasonal shapes are harder to see.
 - **Line chart:** a valid alternative (L11 p.8 shows the same data as a line chart). We kept the radar because the cyclic shape is the message.
 
-**Design decisions:** the loop is closed (L11 p.6). Lines carry the identity and the fills are very light. Direct peak annotations replace a legend, and the ring labels sit on the left of the spoke so they stay clear of the data.
+**Design decisions:** the loop is closed (L11 p.6). Lines and month markers carry the identity, with no filled area: a filled polygon's area grows with the square of the radius and depends on the neighbouring spokes, the same distortion we rejected the rose chart for. Unknown cause is omitted here and the subtitle says so. Direct peak annotations replace a legend, and the ring labels sit on the left of the spoke so they stay clear of the data.
 
 ---
 
 ## Figure 6: where each cause burns (ranked stacked horizontal bars)
 
-**Chosen:** horizontal bars of total area by agency, split by cause, ranked by total, starting at zero, with a direct total and a lightning-share label on each bar.
+**Chosen:** horizontal bars of total area by the province or territory where the fire burned (a spatial join, not the reporting agency, so Parks Canada fires count in their province), split by cause, ranked by total, starting at zero, with a direct total and a lightning-share label on each bar.
 
 **Why:** we are comparing magnitudes across 13 categories, which is the bar chart's job (L3 p.14). Horizontal bars keep the long names readable, the ranking makes the order meaningful (L3 p.19), and the zero baseline keeps lengths honest (L3 p.18).
 
 **Alternatives considered:**
-- **Choropleth by province:** shows geography but not magnitude precisely, and big territories dominate visually. Figure 10 covers geography instead.
+- **Choropleth of totals:** big territories dominate visually just for being big. Figure 11 maps the normalised rate instead, and this chart keeps the exact totals.
 - **Grouped bars by cause:** three bars x 13 agencies is cluttered.
 - **100% stacked bars:** these would hide that the East barely burns at all.
 
@@ -111,11 +112,13 @@ The report's "why this chart" text comes from this file. For each figure it reco
 - **Cumulative-share (Lorenz-style) curve:** strong for the "1% to 85%" claim, but abstract for a general audience. We quote that figure in the text instead.
 - **Box plot:** hides the bimodal count-vs-area shape.
 
-**Design decisions:** the bins are aligned so that 200 ha (the CNFDB large-fire threshold) is a bin edge, and there are four bins per decade, which gives appropriate detail (L7 p.5). The spike at 0.1 ha is a reporting-precision artefact, and the caption says so.
+**Denominator:** fires with a recorded size (408,419). The 40,028 fires recorded as 0 ha cannot sit on a log axis, so every percentage on this figure uses the same base, and the subtitle gives n.
+
+**Design decisions:** the largest 1% of fires (83% of the area) is printed on the chart, so the concentration claim no longer needs a separate curve. Both panels use the same neutral grey, so only the 200 ha highlight carries meaning. The bins are aligned so that 200 ha (the CNFDB large-fire threshold) is a bin edge, and there are four bins per decade, which gives appropriate detail (L7 p.5). The spike at 0.1 ha is a reporting-precision artefact, and the caption says so.
 
 ---
 
-## Figure 8: escaped lightning fires are getting bigger (boxen by decade)
+## Figure 8: escaped lightning fires have grown since 1980 (boxen by decade)
 
 **Chosen:** boxen (letter-value) plots of fire size per decade, split by cause, on a log axis, with the median of each lightning decade labelled. Only fires that grew to at least 1 ha are included.
 
@@ -125,6 +128,8 @@ The report's "why this chart" text comes from this file. For each figure it reco
 - **Box plot:** it collapses the tail into whiskers and outliers, and with 100k+ points per group the outliers become a solid smear.
 - **Violin:** the KDE is smoothed over a log scale with a heavy reporting spike at 0.1 ha, so the bandwidth choice would dominate the shape (L13 p.8).
 - **Line of median by decade:** this drops the distribution entirely.
+
+**Evidence, not eyeballing:** decade medians alone (39, 56, 12, 8, 6, 10, 23, 50 ha) are not monotonic, and quoting the 1990s low point against the 2020s would cherry-pick. The claim is therefore tested on yearly medians over 1980–2025, when reporting is complete: Spearman ρ = 0.68 (p < 0.001) for lightning, 0.66 with 2023 removed, and ρ = 0.28 (p = 0.06) for human fires. The result is printed on the figure, both causes' medians are labelled, and the 2020s are marked as a partial decade (2020–25). The website shows the same yearly medians as a line chart. Confounders (more remote fires left to burn, better satellite mapping) are named in the caption.
 
 **Framing decision:** fires under 1 ha were removed. They are mostly recorded at a fixed 0.1 ha precision, and that pile-up distorted every box. Fires of 1 ha or more (28% of fires) are the ones that "escape", so the result answers a cleaner question. The years before 1980 are shaded as incomplete reporting.
 
@@ -141,6 +146,8 @@ The report's "why this chart" text comes from this file. For each figure it reco
 - **Hexbin density:** loses the actual fire shapes, which are the most striking and honest evidence.
 - **Web Mercator projection:** inflates the North, so Lambert conformal conic (the national atlas standard) is used instead.
 
+**Answering "have they shifted?":** newer scars drawn on top hide older ones, so the shift is measured, not left to the eye. Each decade's area-weighted centre of burning is drawn on the map as a dot in that decade's colour, joined in time order: it stays between 57.7 and 59.7°N (no northward move) but moves about 370 km west from the 1980s to the 2020s. An inset bar chart gives mapped area per year by decade, because the decades have different lengths (the 2020s hold five seasons); burning per year doubled in the 2020s. Province labels have a white halo, and there is a 500 km scale bar.
+
 **Data handling:** the perimeters were simplified at 1 km tolerance for print. Scars smaller than about 1 km² disappear, but 99.06% of the mapped area is kept, and the subtitle says so. The fire-free high Arctic is cropped.
 
 ---
@@ -155,3 +162,19 @@ The report's "why this chart" text comes from this file. For each figure it reco
 - **One map with two colours:** the colours overplot and mix.
 - **2D KDE contours (L13):** they smooth away the road and river corridors that explain human ignitions.
 - **Choropleth of counts:** loses all the within-province detail.
+
+---
+
+## Figure 11: burning per unit of land (normalised choropleth)
+
+**Chosen:** a choropleth of average hectares burned per 1,000 km² of land per year, 1980–2025, by the province or territory where the fires burned, in five binned classes of one sequential ramp, with every value printed on its region.
+
+**Why:** Figure 6 ranks totals, which favour the largest territories. For a map, a rate is required: a choropleth of raw counts makes big regions look important only because they are big. Normalising by land area and by years changes the answer: Saskatchewan (935) burns hardest, then Manitoba and Alberta, and the NWT, first in total area, drops to fourth (531).
+
+**Alternatives considered:**
+- **Choropleth of totals:** misleading for the reason above.
+- **Hexbin of burn rate:** finer detail, but provinces are the units agencies manage and readers know; Figure 10 already shows the detail inside provinces.
+- **Normalising by forested area instead of land area:** fairer for Nunavut and the farmed south, but needs a forest-cover layer outside our data; the source line notes that land area includes tundra and farmland.
+
+**Design decisions:** binned classes rather than a continuous ramp, so each region reads as one class; the lowest class has a visible tint so "low" is not confused with "no data"; values printed directly so no reader has to match shades to the legend.
+

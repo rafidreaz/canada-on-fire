@@ -26,6 +26,63 @@
   "Human": 19.1,
   "Unknown": 6.8
  },
- "share_fires_ge200": 4.8,
- "share_area_ge200": 98.9
+ "share_fires_ge200": 5.3,
+ "share_area_ge200": 98.9,
+ "top_years": [
+  {
+   "year": 2023,
+   "mha": 17.61,
+   "fires": 6837
+  },
+  {
+   "year": 2025,
+   "mha": 8.71,
+   "fires": 6215
+  },
+  {
+   "year": 1989,
+   "mha": 7.6,
+   "fires": 12015
+  },
+  {
+   "year": 1995,
+   "mha": 7.48,
+   "fires": 8463
+  },
+  {
+   "year": 1981,
+   "mha": 6.28,
+   "fires": 9242
+  },
+  {
+   "year": 1994,
+   "mha": 6.21,
+   "fires": 9663
+  },
+  {
+   "year": 2024,
+   "mha": 5.37,
+   "fires": 5844
+  },
+  {
+   "year": 1980,
+   "mha": 4.82,
+   "fires": 7483
+  },
+  {
+   "year": 1998,
+   "mha": 4.82,
+   "fires": 10766
+  },
+  {
+   "year": 2014,
+   "mha": 4.55,
+   "fires": 5016
+  }
+ ],
+ "rho": {
+  "lightning": 0.68,
+  "human": 0.28,
+  "p_human": 0.06
+ }
 }

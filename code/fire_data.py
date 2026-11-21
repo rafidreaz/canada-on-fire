@@ -35,6 +35,17 @@ AGENCY_SHORT = {
     "YT": "Yukon", "NT": "NW Territories", "PC": "Parks Canada",
 }
 
+# Province/territory the fire burned in (by location, not by reporting agency):
+# Parks Canada fires join their province, NWT and Nunavut separate.
+PROV_SHORT = {
+    "BC": "BC", "AB": "Alberta", "SK": "Saskatchewan", "MB": "Manitoba",
+    "ON": "Ontario", "QC": "Quebec", "NB": "New Brunswick", "NS": "Nova Scotia",
+    "PE": "PEI", "NL": "Newfoundland & Lab.", "YT": "Yukon",
+    "NT": "NW Territories", "NU": "Nunavut",
+}
+PROVINCES_FILE = PROJECT_DIR / "data_derived" / "canada_provinces.gpkg"
+OFFICIAL_STATS = _RAW_DIR / "NFDB_point_stats.xlsx"
+
 SIZE_BINS = [0, 0.1, 1, 10, 100, 1_000, 10_000, np.inf]
 SIZE_LABELS = ["<0.1 ha", "0.1-1", "1-10", "10-100", "100-1k", "1k-10k", ">10k ha"]
 
@@ -57,7 +68,45 @@ def load_fires(path: Path = DATA_FILE) -> pd.DataFrame:
     df["decade"] = (df["YEAR"] // 10) * 10
     df["size_class"] = pd.cut(df["SIZE_HA"], SIZE_BINS, labels=SIZE_LABELS,
                               include_lowest=True, right=False)
-    return df.reset_index(drop=True)
+    df = df.reset_index(drop=True)
+    df["province"] = pd.Categorical(add_province(df).map(PROV_SHORT),
+                                    list(PROV_SHORT.values()))
+    return df
+
+
+def add_province(df: pd.DataFrame) -> pd.Series:
+    """Two-letter code of the province/territory each fire point falls in.
+
+    Points just offshore or on a simplified coastline (1.3%) take the nearest
+    province within 25 km; the remaining 346 (0.08%) stay unassigned.
+    """
+    import geopandas as gpd
+    prov = gpd.read_file(PROVINCES_FILE, columns=["postal"])
+    pts = gpd.GeoDataFrame(geometry=gpd.points_from_xy(df.LONGITUDE, df.LATITUDE),
+                           index=df.index, crs=4326).to_crs(prov.crs)
+    j = gpd.sjoin(pts, prov, how="left", predicate="within")
+    j = j[~j.index.duplicated()]
+    miss = j.postal.isna()
+    nn = gpd.sjoin_nearest(pts[miss], prov, how="left", max_distance=25_000)
+    j.loc[miss, "postal"] = nn[~nn.index.duplicated()].postal
+    return j.postal
+
+
+def check_official(df: pd.DataFrame, path: Path = OFFICIAL_STATS) -> pd.DataFrame:
+    """Compare yearly fires and hectares with NRCan's published NFDB summary.
+
+    Returns only the years that differ (fires, or area by more than 1 ha).
+    """
+    if not Path(path).exists():
+        print(f"Official summary not found ({Path(path).name}); check skipped.")
+        return pd.DataFrame()
+    o = pd.read_excel(path, sheet_name="CNFDB_SumStats_Src_Data", header=1)
+    o = o[pd.to_numeric(o.YEAR, errors="coerce").between(FIRST_YEAR, LAST_YEAR)]
+    off = o.astype({"YEAR": int}).groupby("YEAR")[["FIRES", "TOTAL_HA"]].sum()
+    j = yearly(df).join(off)
+    j["fires_diff"] = j.fires - j.FIRES
+    j["ha_diff"] = (j.area_ha - j.TOTAL_HA).round(0)
+    return j[(j.fires_diff != 0) | (j.ha_diff.abs() > 1)]
 
 
 def yearly(df: pd.DataFrame) -> pd.DataFrame:
