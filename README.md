@@ -12,6 +12,12 @@ pip install -r requirements.txt
 
 In VS Code / Jupyter, select the `.venv` kernel.
 
+Install the project dependencies, including the packages for the interactive figures, with:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Data
 
 **The clean data is already in this repo (`data/clean/`), so you can start making figures straight away.**
@@ -86,6 +92,17 @@ All three map layers use **EPSG:3347** (StatCan Lambert), so they line up with n
 | `01_clean.ipynb` | Raw downloads → `data/clean/` (only needed if you change the cleaning) |
 | `02_explore.ipynb` | Tests each proposal claim; the first cell summarises what holds up |
 | `03_figures.ipynb` | Builds all 8 report figures into `figures/` (PDF for LaTeX, PNG previews) |
+| `04_interactive.py` | Builds the interactive website figures (requires Plotly and Folium) |
+
+To generate the interactive figures, first install dependencies from the repository root with `pip install -r requirements.txt`.
+Then run the script from the `notebooks/` directory so its relative data and output paths resolve correctly:
+
+```bash
+cd notebooks
+python 04_interactive.py
+```
+
+The generated standalone HTML files are saved in `site/interactive/`.
 
 ## Figure style
 
