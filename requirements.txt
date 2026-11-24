@@ -11,3 +11,5 @@ openpyxl==3.1.5
 ipykernel
 nbformat
 nbclient
+plotly==7.1.0
+folium==1.0.0

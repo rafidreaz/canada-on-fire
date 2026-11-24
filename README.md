@@ -12,6 +12,12 @@ pip install -r requirements.txt
 
 In VS Code / Jupyter, select the `.venv` kernel.
 
+Install the project dependencies, including the packages for the interactive figures, with:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Data
 
 **The clean data is already in this repo (`data/clean/`), so you can start making figures straight away.**
@@ -86,6 +92,31 @@ All three map layers use **EPSG:3347** (StatCan Lambert), so they line up with n
 | `01_clean.ipynb` | Raw downloads → `data/clean/` (only needed if you change the cleaning) |
 | `02_explore.ipynb` | Tests each proposal claim; the first cell summarises what holds up |
 | `03_figures.ipynb` | Builds all 8 report figures into `figures/` (PDF for LaTeX, PNG previews) |
+| `04_interactive.py` | Builds the standalone interactive figures in `site/interactive/` (requires Plotly and Folium) |
+| `05_site.py` | Builds the data the website loads: chart specs (`site/charts/`), map layers (`site/img/`), `site/data/`, plus copies of the report figures and PDF |
+
+## Website (`site/`)
+
+`site/index.html` is a single-page companion to the report, in the layout of the `moskhan` companion site: one
+numbered section per question, every chart interactive (hover, zoom, data table), a light/dark theme toggle, and the
+printed report figure under each chart. It reads only files inside `site/`, so it can be hosted as-is (for example
+on GitHub Pages).
+
+To rebuild it, install dependencies from the repository root with `pip install -r requirements.txt`, then run both
+scripts from the `notebooks/` folder so their relative paths resolve:
+
+```bash
+cd notebooks
+python 04_interactive.py    # Shondhy's figures, incl. the fire-by-fire perimeter map
+python 05_site.py           # everything else the page loads (about a minute)
+```
+
+To view it locally, serve the folder rather than opening the file directly (browsers block `fetch` from `file://`):
+
+```bash
+cd site
+python -m http.server 8000   # then open http://localhost:8000
+```
 
 ## Figure style
 
@@ -102,7 +133,8 @@ Every figure uses `notebooks/style.py` (`import style; style.apply()`). Use its 
 ```
 data/raw/        downloads (not shared)
 data/clean/      outputs of 01_clean.ipynb
-notebooks/       01_clean, 02_explore, 03_figures, style.py
+notebooks/       01_clean, 02_explore, 03_figures, 04_interactive, 05_site, style.py
 figures/         exported figures for the report
 report/          LaTeX source
+site/            the website (index.html plus the files it loads)
 ```
