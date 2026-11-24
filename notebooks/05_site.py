@@ -58,11 +58,12 @@ def _nan_to_null(o):
     return o
 
 
-def dump(fig, name, table):
-    """Write one chart spec. `table` = (header, rows) of preformatted strings for the page's data-table view."""
+def dump(fig, name, table, extra=None):
+    """Write one chart spec. `table` = (header, rows) of preformatted strings for the page's data-table view;
+    `extra` = anything else the page needs to know about the chart (kept in layout.meta)."""
     spec = json.loads(json.dumps(fig.to_plotly_json(), cls=_Encoder))
     spec["layout"].pop("template", None)
-    spec["layout"]["meta"] = {"table": {"head": table[0], "rows": table[1]}}
+    spec["layout"]["meta"] = {"table": {"head": table[0], "rows": table[1]}, **(extra or {})}
     text = json.dumps(_nan_to_null(spec), separators=(",", ":"), ensure_ascii=False)
     (SITE / "charts" / f"{name}.json").write_text(text, encoding="utf-8")
     print(f"charts/{name}.json  {len(text) / 1024:,.0f} KB")
@@ -151,7 +152,7 @@ for col, sh in enumerate(shares, start=1):
             text=[f"{v:.0f}%" if cause == "Lightning" and v >= 12 else "" for v in sh[cause]],
             textposition="inside", insidetextanchor="end",
             hovertemplate="%{y}<br>" + cause + ": %{x:.0f}%<extra></extra>"), row=1, col=col)
-c3.update_layout(barmode="stack", bargap=0.3, height=520, margin=dict(l=8, r=30, t=84, b=28),
+c3.update_layout(barmode="stack", bargap=0.3, barcornerradius=3, height=520, margin=dict(l=8, r=30, t=84, b=28),
                  yaxis=dict(autorange="reversed", automargin=True), legend=dict(y=1.12, yanchor="bottom"))
 c3.update_xaxes(range=[0, 100], tickvals=[0, 25, 50, 75, 100], ticktext=["0%", "25%", "50%", "75%", "100%"])
 dump(c3, "c3_share", (["Province / territory", "Lightning: % of fires", "Lightning: % of area",
@@ -260,7 +261,7 @@ c6.add_trace(go.Bar(x=centres, y=area_pct.round(2), name="Share of area burned",
                     hovertemplate="%{customdata}<br>%{y:.1f}% of area<extra></extra>"))
 c6.add_annotation(x=0.1, y=24, text="Most fires are<br>under 1 ha", showarrow=False, xanchor="left")
 c6.add_annotation(x=4.5, y=31, text="Most area comes from<br>fires over 10,000 ha", showarrow=False)
-c6.update_layout(barmode="group", bargap=0.12, height=420, margin=dict(l=52, r=12, t=36, b=48),
+c6.update_layout(barmode="group", bargap=0.12, barcornerradius=3, height=420, margin=dict(l=52, r=12, t=36, b=48),
                  xaxis=dict(title="Fire size (ha, log scale)", tickvals=list(range(-2, 7)),
                             ticktext=["0.01", "0.1", "1", "10", "100", "1K", "10K", "100K", "1M"]),
                  yaxis=dict(ticksuffix="%"))
@@ -348,7 +349,9 @@ def rings(geom):
 
 c9 = go.Figure()
 seen = set()
+c9_codes = []                                         # province code of each trace, for click-to-select
 for _, row in shapes.sort_values("cls").iterrows():
+    c9_codes.append(row["province"])
     xs, ys = rings(row.geometry)
     k = int(row["cls"])
     p = row["province"]
@@ -373,7 +376,56 @@ dump(c9, "c9_choropleth", (["Province / territory", "Area burned (Mha)", "Land (
                             "ha per 1,000 km² per year", "% of Canada's area burned"],
                            [[NAMES[p], f"{fires.loc[fires.province == p, 'size_ha'].sum() / 1e6:.2f}",
                              f"{provinces.set_index('province').loc[p, 'land_km2'] / 1000:,.0f}",
-                             f"{rate[p]:,.1f}", pct(share_nat[p], 1)] for p in rate.sort_values(ascending=False).index]))
+                             f"{rate[p]:,.1f}", pct(share_nat[p], 1)] for p in rate.sort_values(ascending=False).index]),
+     extra={"codes": c9_codes})
+
+# %% [markdown]
+# ## Explorer data: one record per year and per province
+# The page's year and province explorers read these; every value is computed here, not in the browser.
+
+# %%
+MONTH_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+              "November", "December"]
+rank = annual.rank(ascending=False, method="min").astype(int)
+yr_cause = fires.groupby(["year", "cause"], observed=True)["size_ha"].sum().unstack(fill_value=0)
+yr_month = (fires.dropna(subset=["month"]).groupby(["year", "month"])["size_ha"].sum().unstack(fill_value=0)
+            .reindex(columns=range(1, 13), fill_value=0))
+yr_prov = fires.groupby(["year", "province"])["size_ha"].sum()
+biggest = fires.loc[fires.groupby("year")["size_ha"].idxmax(), ["year", "size_ha", "province", "cause", "month"]]
+years = []
+for y in annual.index:
+    b = biggest[biggest["year"] == y].iloc[0]
+    tops = yr_prov.loc[y].sort_values(ascending=False).head(3)
+    m = yr_month.loc[y] if y in yr_month.index else pd.Series(0, index=range(1, 13))
+    years.append(dict(
+        year=int(y), mha=round(annual[y], 3), rank=int(rank[y]), fires=int(counts[y]),
+        lightning=round(yr_cause.loc[y].get("Lightning", 0) / yr_cause.loc[y].sum() * 100, 1),
+        months=[round(v / 1e6, 4) for v in m.tolist()],
+        peak=MONTH_FULL[int(m.idxmax()) - 1] if m.max() > 0 else None,
+        top=[[NAMES[p], round(v / 1e6, 3)] for p, v in tops.items() if v > 0],
+        biggest=dict(ha=round(float(b["size_ha"])), where=NAMES.get(b["province"], b["province"]),
+                     cause=str(b["cause"]),
+                     month=MONTH_FULL[int(b["month"]) - 1] if pd.notna(b["month"]) else None)))
+(SITE / "data" / "years.json").write_text(json.dumps(dict(n=len(years), years=years)), encoding="utf-8")
+
+PDECS = ["1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]
+p_dec = fires.groupby(["province", "decade"], observed=True)["size_ha"].sum().unstack(fill_value=0)
+p_n = fires.groupby(["province", "cause"], observed=True).size().unstack(fill_value=0)
+p_a = fires.groupby(["province", "cause"], observed=True)["size_ha"].sum().unstack(fill_value=0)
+rate_rank = rate.rank(ascending=False, method="min").astype(int)
+prov_out = {}
+for p in rate.index:
+    big = fires[fires["province"] == p].nlargest(1, "size_ha").iloc[0]
+    prov_out[p] = dict(
+        code=p, name=NAMES[p], rate=round(rate[p], 1), rank=int(rate_rank[p]), of=len(rate),
+        mha=round(fires.loc[fires.province == p, "size_ha"].sum() / 1e6, 2), share=round(share_nat[p], 1),
+        fires=int(p_n.loc[p].sum()),
+        l_fires=round(p_n.loc[p].get("Lightning", 0) / p_n.loc[p].sum() * 100, 1),
+        l_area=round(p_a.loc[p].get("Lightning", 0) / max(p_a.loc[p].sum(), 1) * 100, 1),
+        decades=[[d, round(p_dec.loc[p].get(d, 0) / 1e6, 3)] for d in PDECS],
+        biggest=dict(ha=round(float(big["size_ha"])), year=int(big["year"]), cause=str(big["cause"])))
+(SITE / "data" / "provinces.json").write_text(json.dumps(prov_out), encoding="utf-8")
+print("explorer data written:", len(years), "years,", len(prov_out), "provinces")
 
 # %% [markdown]
 # ## Q4: map layers for the decade scrubber, the hero map and the small multiples
@@ -382,9 +434,11 @@ dump(c9, "c9_choropleth", (["Province / territory", "Area burned (Mha)", "Land (
 
 # %%
 DECADES = ["1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]
-RAMP = {"light": ["#f69c73", "#f3714d", "#e83f3f", "#ca1a50", "#a11a5b", "#751f58"],
-        "dark": ["#721a6e", "#a62d60", "#d44842", "#f3761b", "#fcb014", "#f1ef75"]}
-LAND = {"light": dict(land="#E6E1D9", edge="#FFFFFF"), "dark": dict(land="#2A2622", edge="#16130F")}
+# One-hue ordinal ramps, oldest decade lightest (light theme) or dimmest (dark theme); both pass the dataviz
+# skill's ordinal validator (monotone lightness, visible steps, end step >= 2:1 against the chart surface).
+RAMP = {"light": ["#f0956a", "#e4703f", "#cc4f23", "#a83a14", "#80290c", "#561a06"],
+        "dark": ["#8a3517", "#b2461c", "#d75a27", "#ef7a45", "#f6a274", "#fbcaa6"]}
+LAND = {"light": dict(land="#E8E4DD", edge="#FDFCFA"), "dark": dict(land="#272B30", edge="#171A1D")}
 x0, y0, x1, y1 = provinces.total_bounds
 XL = (x0 + 0.02 * (x1 - x0), x1 - 0.03 * (x1 - x0))
 YL = (y0, y0 + 0.78 * (y1 - y0))
