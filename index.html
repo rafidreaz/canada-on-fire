@@ -185,6 +185,11 @@ table.data th { font: 500 0.72rem/1.25 var(--f-mono); letter-spacing: 0.04em; te
 .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--sunk); gap: 2px; }
 .seg button { font: 600 0.8rem/1 var(--f-sans); border: 0; border-radius: 999px; padding: 0.5rem 0.85rem; background: transparent; color: var(--ink-2); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.pair > div { min-width: 0; }
+.pair-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.pair-label b { color: var(--ink); font-weight: 600; }
+@media (max-width: 860px) { .pair { grid-template-columns: minmax(0, 1fr); } }
 .key { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; font-size: 0.85rem; color: var(--ink-2); }
 .key span { display: inline-flex; align-items: center; gap: 0.4rem; }
 .key i { width: 0.75rem; height: 0.75rem; border-radius: 3px; display: inline-block; }
@@ -403,10 +408,11 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
       </figure>
 
       <figure class="fig">
-        <header><p class="kicker">Figure 5 · Treemap and sunburst</p><h3>Where the land burns, and what started it</h3><p class="sub">Area burned by large fires (200 ha or more), 1959–2025, by province and cause. Click a tile or slice to zoom in; click the top bar or centre to zoom out.</p></header>
-        <div><div class="seg" role="group" aria-label="Choose view"><button type="button" data-hier="c5_treemap" aria-pressed="true">Province first</button><button type="button" data-hier="c5_sunburst" aria-pressed="false">Cause first</button></div></div>
-        <div class="chart" id="c5_treemap" role="img" aria-label="Treemap of area burned by large fires by province and cause: the Northwest Territories and Saskatchewan are the largest, mostly lightning"></div>
-        <div class="chart" id="c5_sunburst" hidden role="img" aria-label="Sunburst of area burned by large fires, cause first then province: lightning holds most of the area"></div>
+        <header><p class="kicker">Figure 5 · Treemap and sunburst</p><h3>Where the land burns, and what started it</h3><p class="sub">Area burned by large fires (200 ha or more), 1959–2025, by province and cause, in two orders. Click a tile or slice to zoom in; click the top bar or centre to zoom out.</p></header>
+        <div class="pair">
+          <div><p class="pair-label"><b>Province first</b> · treemap</p><div class="chart" id="c5_treemap" role="img" aria-label="Treemap of area burned by large fires by province and cause: the Northwest Territories and Saskatchewan are the largest, mostly lightning"></div></div>
+          <div><p class="pair-label"><b>Cause first</b> · sunburst</p><div class="chart" id="c5_sunburst" role="img" aria-label="Sunburst of area burned by large fires, cause first then province: lightning holds most of the area"></div></div>
+        </div>
         <p class="takeaway">Lightning fills most of every large province's tile. <b>The Northwest Territories alone hold about a quarter</b> of all area burned, almost all of it from lightning.</p>
         <div class="tools" data-fig="c5_treemap" data-why="The same two-level breakdown read in both orders: where does it burn, and what starts the fires that burn it. Size is proportional to hectares, so the largest areas dominate at a glance, and both views zoom on click for the small provinces."></div>
       </figure>
@@ -833,10 +839,6 @@ footer.site .in { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-cont
     if (id === "c1_annual" || id === "c2_heatmap") el.on("plotly_click", ev => { const x = ev.points && ev.points[0] && ev.points[0].x; if (x >= 1959) setYear(Math.round(x)); });
     if (id === "c9_choropleth") el.on("plotly_click", ev => { const p = ev.points && ev.points[0]; const codes = specs[id].layout.meta.codes; if (p && codes[p.curveNumber]) setProvince(codes[p.curveNumber]); });
   }
-  $$("[data-hier]").forEach(b => b.addEventListener("click", () => {
-    $$("[data-hier]").forEach(x => { const on = x === b; x.setAttribute("aria-pressed", on ? "true" : "false"); document.getElementById(x.dataset.hier).hidden = !on; });
-    render(b.dataset.hier);
-  }));
 
   const ids = ["c1_annual", "c2_heatmap", "c3_share", "c4_radial", "c5_treemap", "c5_sunburst", "c6_sizes", "c7_concentration", "c8_decades", "c9_choropleth"];
   const renderAll = () => { ids.forEach(render); drawRamps(); drawStripes(); if (years) setYear(curYear); if (provs) setProvince(curProv); };
